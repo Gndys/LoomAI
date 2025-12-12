@@ -1234,11 +1234,129 @@ export const en: Locale = {
       description: "Generate photorealistic apparel model shots from a single sentence. Built for fashion brands that need on-model imagery without a photoshoot.",
       keywords: "AI model generator, fashion lookbook AI, apparel imagery, text to image, runway AI"
     },
+    nanoBanana: {
+      title: "Nano Banana 2 Image Lab",
+      subtitle: "Test the Nano Banana 2 (Gemini 3) pipeline for text-to-image and image-to-image. Great for catalog portraits, hero banners, and quick outfit swaps.",
+      promptTitle: "Creative brief",
+      promptDescription: "Describe what you want. Add references for image-to-image or editing flows.",
+      promptLabel: "Prompt",
+      promptPlaceholder: "e.g. Editorial portrait of a streetwear model in Tokyo neon, 3:4, cinematic light",
+      promptHelper: "Keep it short: subject + styling + lighting + mood.",
+      modelLabel: "Model",
+      modelHelper: "Switch between ultra-fast Z Image Turbo, Nano Banana 2 Lite, or Gemini 3 Pro (preview).",
+      sizeLabel: "Aspect ratio",
+      qualityLabel: "Quality",
+      qualityHelper: "4K uses more credits. 2K is a good balance. Z Image Turbo ignores quality (size only).",
+      models: {
+        "z-image-turbo": "Z Image Turbo",
+        "nano-banana-2-lite": "Nano Banana 2 Lite",
+        "gemini-3-pro-image-preview": "Gemini 3 Pro Image Preview",
+      },
+      referencesTitle: "Reference images",
+      referencesDescription: "Optional: drop files to run image-to-image or editing.",
+      referencesCta: "Drag & drop or click to upload",
+      referencesHelper: "JPG/PNG/WebP • up to 5 • ≤10MB each",
+      referenceHint: "Photo 1 is treated as the strongest reference.",
+      uploadCta: "Upload from device",
+      uploading: "Uploading…",
+      statusTitle: "Async task status",
+      statusDescription: "Submit, then poll. Links stay live for 24h.",
+      resultTitle: "Output preview",
+      resultDescription: "The first returned URL is shown here.",
+      errorState: "Generation failed. Tweak the prompt or try again.",
+      generateCta: "Generate with Nano Banana 2",
+      generating: "Submitting…",
+      resetCta: "Reset",
+      downloadCta: "Download",
+      downloading: "Downloading…",
+      badges: {
+        model: "Model: Nano Banana 2 (Gemini 3)",
+        async: "Async: returns task ID",
+        expiry: "Images valid for 24h",
+      },
+      scenariosTitle: "Quick recipes",
+      scenarios: [
+        {
+          title: "Catalog studio (text-to-image)",
+          prompt: "Studio portrait of a female model wearing a cropped denim jacket and pleated midi skirt, soft daylight, neutral backdrop, 3:4.",
+        },
+        {
+          title: "Street lookbook",
+          prompt: "Streetwear male model in Tokyo alley at night, oversized bomber jacket with graphic tee, neon rim light, 3:4.",
+        },
+        {
+          title: "Packshot to hero (image-to-image)",
+          prompt: "Turn the reference packshot into an on-body hero image, keep fabric and logo exactly the same, minimal studio background.",
+        },
+        {
+          title: "Retouch & relight",
+          prompt: "Relight the reference portrait to warm sunset glow, keep the face and wardrobe identical, subtle film grain.",
+        },
+      ],
+      checklistTitle: "Run checklist",
+      checklistDescription: "Make sure inputs match the mode you want.",
+      checklistItems: {
+        references: "Add a reference to switch into image-to-image or editing.",
+        prompt: "State subject + styling + light. Short and concrete beats long.",
+        quality: "Choose 1K/2K/4K. 2K recommended for most tests.",
+        model: "Pick a model: Turbo for speed, Nano Lite for I2I/edit, Gemini for fidelity.",
+      },
+      linkNotice: "Result URLs expire in 24h. Download if you need to archive.",
+      toasts: {
+        requiredPrompt: "Please enter a prompt.",
+        invalidType: "Only image files are supported.",
+        fileTooLarge: "Images must be 10MB or smaller.",
+        maxFiles: "You can upload up to 5 images.",
+        error: "Unable to submit task. Please try again.",
+      },
+    },
+    promptExtractor: {
+      title: "Image Prompt Extractor",
+      subtitle: "Upload a reference image and let GPT-5 Nano break it into ready-to-use prompt keywords.",
+      uploadTitle: "Reference image",
+      uploadDescription: "Drop one JPG/PNG/WebP (≤10MB). We convert it to a secure data URL and call APIMart.",
+      uploadLimit: "Single image · JPG/PNG/WebP · ≤10MB",
+      dropLabel: "Drag & drop or click to upload",
+      removeLabel: "Remove image",
+      helper: "Output covers subject, garment/fabric, background, lighting, camera framing, and mood.",
+      hintsLabel: "Optional instruction",
+      hintsPlaceholder: "e.g. reply in English, highlight lens & palette, keep under 100 tokens",
+      cta: "Extract prompt",
+      analyzing: "Analyzing image…",
+      resultTitle: "Prompt result",
+      resultDescription: "Copy the AI-composed prompt for your image-to-image or diffusion jobs.",
+      copy: "Copy prompt",
+      copied: "Prompt copied",
+      usageLabel: "Token usage",
+      usageTokens: {
+        prompt: "Prompt tokens",
+        completion: "Completion tokens",
+        total: "Total tokens",
+      },
+      badges: {
+        model: "Model: gpt-5-nano",
+        endpoint: "Endpoint: /v1/responses",
+        vision: "Vision ready",
+      },
+      statuses: {
+        idle: "Waiting for an image",
+        analyzing: "Analyzing…",
+        success: "Prompt ready",
+        error: "Extraction failed",
+      },
+      toasts: {
+        missingImage: "Please upload an image first.",
+        invalidType: "Only JPG/PNG/WebP files are supported.",
+        fileTooLarge: "Images must be 10MB or smaller.",
+        error: "Unable to extract prompt. Please try again.",
+        success: "Prompt extracted successfully.",
+      },
+    },
     generator: {
       title: "Describe the look. LoomAI renders the model.",
-      subtitle: "Create editorial-ready on-model shots for apparel drops in seconds. Our Evolink Z Image Turbo integration understands fabrics, posing, and catalog specs.",
+      subtitle: "Create editorial-ready on-model shots for apparel drops in seconds. Default: Z Image Turbo for fastest text-to-image. Upload references and we auto-switch to Nano Banana 2 (Gemini 3) for fusion.",
       badges: {
-        model: "Powered by Z Image Turbo",
+        model: "Default: Z Image Turbo · References: Nano Banana 2",
         turnaround: "<30s average turnaround",
         usage: "Links stay live for 24h"
       },
@@ -1254,12 +1372,17 @@ export const en: Locale = {
         qualityLabel: "Fabric fidelity",
         qualityHelper: "We lock in calibrated apparel checkpoints so pleats, seams, and trims remain intact.",
         ratioLabels: {
+          auto: "Auto (respect source)",
           "3:4": "3:4 Editorial Portrait",
           "4:3": "4:3 Catalog Spread",
           "1:1": "1:1 Social / PDP square",
           "9:16": "9:16 Mobile hero",
           "16:9": "16:9 Campaign landscape",
-          "2:3": "2:3 Runway crop"
+          "2:3": "2:3 Runway crop",
+          "3:2": "3:2 Magazine crop",
+          "4:5": "4:5 Poster portrait",
+          "5:4": "5:4 Gallery frame",
+          "21:9": "21:9 Cinematic banner"
         },
         submit: "Generate model",
         generating: "Generating…",
@@ -1267,6 +1390,35 @@ export const en: Locale = {
         validation: {
           requiredPrompt: "Please describe the look you want to render."
         }
+      },
+      fusion: {
+        title: "Reference fusion",
+        description: "Upload references to fuse. We treat Photo 1 as the model identity and Photo 2 as the exact garment.",
+        badge: "Photo fusion",
+        helper: "Drag JPG/PNG/WebP here. Up to 5 images, each ≤10MB.",
+        limit: "Supports up to 5 reference images • JPG/PNG/WebP • ≤10MB each.",
+        emptyTitle: "Drop or select references",
+        emptyDescription: "Photo 1 = model reference, Photo 2 = garment reference. Additional photos add detail or background context.",
+        selectFiles: "Select images",
+        addMore: "Add {count} more",
+        orderHint: "Photo 1 locks the model identity, Photo 2 copies the outfit exactly.",
+        photoLabel: "Photo {index}",
+        previewAlt: "Reference image {index}",
+        removeLabel: "Remove image",
+        directiveTitle: "Default instruction we append",
+        defaultPrompt: "Take the person from the model reference (Photo 1) and dress them in the exact garment from the garment reference (Photo 2) with no other alterations. Preserve faces, poses, proportions, and camera framing exactly while copying the garment fabric, colors, prints, trims, and construction one-to-one.",
+        errors: {
+          maxFiles: "You can upload up to 5 images.",
+          invalidType: "Only image files are supported.",
+          fileTooLarge: "Reference images must be 10MB or smaller."
+        }
+      },
+      sectionNav: {
+        title: "Jump to",
+        fusion: "Fusion",
+        prompt: "Prompt",
+        status: "Status",
+        result: "Result"
       },
       status: {
         idle: "Ready to generate",
@@ -1448,13 +1600,13 @@ export const en: Locale = {
         badge: "Virtual fitting lab",
         title: "See your model wearing any street snap or catalog outfit.",
         subtitle:
-          "Upload your preferred model reference, then drop in the garment photo—whether it's a flat lay, lookbook crop, or someone else wearing it. LoomAI transfers the outfit while keeping faces, poses, and backgrounds intact.",
-        highlights: ["Model + garment upload", "Background & fit control", "Accessory preservation"]
+          "Upload the model photo (Photo 1) and the garment photo (Photo 2). We upload to OSS and call Nano Banana 2 (Gemini 3) to dress Photo 1 in the exact outfit from Photo 2.",
+        highlights: ["Photo 1 model + Photo 2 garment", "OSS upload + async task", "Powered by Nano Banana 2"]
       },
       uploadSection: {
         title: "Upload references",
         description: "We need both the model you want to dress and the garment you want to borrow.",
-        limit: "JPG/PNG up to 15MB. Clear lighting helps.",
+        limit: "JPG/PNG/WebP up to 10MB. Clear lighting helps.",
         replace: "Choose file",
         clear: "Clear image"
       },
@@ -1468,6 +1620,7 @@ export const en: Locale = {
         description: "Use a clothing flat, mannequin, or someone else wearing it.",
         helper: "Crop tight to the outfit."
       },
+      simplePrompt: "Take the person from photo 1 and put on the exact outfit from photo 2, keeping the identity and pose unchanged.",
       controls: {
         backgroundLabel: "Background handling",
         backgroundPlaceholder: "Choose a background rule",
@@ -1524,7 +1677,7 @@ export const en: Locale = {
         modelRequired: "Upload the model reference first.",
         garmentRequired: "Upload the garment reference you want to transfer.",
         invalidFileType: "Only image uploads are supported.",
-        fileTooLarge: "Images must be 15MB or smaller.",
+        fileTooLarge: "Images must be 10MB or smaller.",
         error: "Unable to run virtual try-on.",
         completed: "Try-on completed."
       }
@@ -1638,9 +1791,12 @@ export const en: Locale = {
   },
   header: {
     navigation: {
+      menu: "Features",
       ai: "AI Model Studio",
       fabric: "Fabric Designer",
       tryOn: "Virtual Try-On",
+      nano: "Nano",
+      promptExtractor: "Prompt Extractor",
       premiumFeatures: "Premium Features",
       pricing: "Pricing"
     },

@@ -7,16 +7,13 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
 import { Progress } from "@/components/ui/progress";
 import { Sparkles, UploadCloud, Repeat, AlertTriangle, Clock, Image as ImageIcon, Download } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 type GenerationStatus = "idle" | "creating" | "polling" | "completed" | "failed";
 
-const MAX_FILE_SIZE = 15 * 1024 * 1024;
+const MAX_FILE_SIZE = 10 * 1024 * 1024;
 
 interface TryOnHistoryItem {
   id: string;
@@ -39,10 +36,6 @@ export default function VirtualTryOnPage() {
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [estimatedTime, setEstimatedTime] = useState<number | null>(null);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
-  const [backgroundMode, setBackgroundMode] = useState("preserve");
-  const [fitTightness, setFitTightness] = useState(60);
-  const [preserveAccessories, setPreserveAccessories] = useState(true);
-  const [notes, setNotes] = useState("");
   const [history, setHistory] = useState<TryOnHistoryItem[]>([]);
   const [garmentLabel, setGarmentLabel] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -89,8 +82,6 @@ export default function VirtualTryOnPage() {
       if (timer) clearInterval(timer);
     };
   }, [status]);
-
-  const backgroundOptions = useMemo(() => t.ai.tryOn.controls.backgroundOptions, [t]);
 
   const makePreview = (file: File, setter: (url: string) => void) => {
     const url = URL.createObjectURL(file);
@@ -147,7 +138,6 @@ export default function VirtualTryOnPage() {
     setEstimatedTime(null);
     setImageUrl(null);
     setGarmentLabel("");
-    setNotes("");
     setHistory([]);
   };
 
@@ -161,6 +151,20 @@ export default function VirtualTryOnPage() {
       return;
     }
 
+    const uploadToOss = async (file: File, label: string) => {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await fetch("/api/uploads", {
+        method: "POST",
+        body: fd,
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || `${label} upload failed`);
+      }
+      return data.url as string;
+    };
+
     setIsSubmitting(true);
     setStatus("creating");
     setProgress(0);
@@ -168,18 +172,23 @@ export default function VirtualTryOnPage() {
     setImageUrl(null);
     setTaskId(null);
 
-    const formData = new FormData();
-    formData.append("modelImage", modelFile);
-    formData.append("garmentImage", garmentFile);
-    formData.append("backgroundMode", backgroundMode);
-    formData.append("fitTightness", fitTightness.toString());
-    formData.append("preserveAccessories", preserveAccessories ? "true" : "false");
-    formData.append("notes", notes);
-
     try {
+      const [modelUrl, garmentUrl] = await Promise.all([
+        uploadToOss(modelFile, "Model image"),
+        uploadToOss(garmentFile, "Garment image"),
+      ]);
+
+      const prompt = t.ai.tryOn.simplePrompt || "Take the person from photo 1 and put on the exact outfit from photo 2.";
+
       const response = await fetch("/api/ai/try-on", {
         method: "POST",
-        body: formData,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          modelUrl,
+          garmentUrl,
+          prompt,
+          size: "3:4",
+        }),
       });
       const data = await response.json();
       if (!response.ok) {
@@ -339,61 +348,6 @@ export default function VirtualTryOnPage() {
                   replaceLabel={t.ai.tryOn.uploadSection.replace}
                   clearLabel={t.ai.tryOn.uploadSection.clear}
                 />
-              </div>
-
-              <div className="rounded-xl border bg-muted/20 p-4 space-y-4">
-                <div className="grid gap-4 md:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label>{t.ai.tryOn.controls.backgroundLabel}</Label>
-                    <Select value={backgroundMode} onValueChange={setBackgroundMode}>
-                      <SelectTrigger>
-                        <SelectValue placeholder={t.ai.tryOn.controls.backgroundPlaceholder} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {backgroundOptions.map((option: { value: string; label: string; helper: string }) => (
-                          <SelectItem key={option.value} value={option.value}>
-                            <div className="space-y-0.5">
-                              <p className="text-sm font-medium">{option.label}</p>
-                              <p className="text-xs text-muted-foreground">{option.helper}</p>
-                            </div>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <div className="flex items-center justify-between">
-                      <Label>{t.ai.tryOn.controls.fitLabel}</Label>
-                      <span className="text-xs text-muted-foreground">{fitTightness}%</span>
-                    </div>
-                    <input
-                      type="range"
-                      min={10}
-                      max={100}
-                      step={5}
-                      value={fitTightness}
-                      onChange={(event) => setFitTightness(Number(event.target.value))}
-                      className="w-full"
-                    />
-                    <p className="text-xs text-muted-foreground">{t.ai.tryOn.controls.fitHelper}</p>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <Label>{t.ai.tryOn.controls.accessoriesLabel}</Label>
-                      <p className="text-xs text-muted-foreground">{t.ai.tryOn.controls.accessoriesHelper}</p>
-                    </div>
-                    <Switch checked={preserveAccessories} onCheckedChange={setPreserveAccessories} />
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label>{t.ai.tryOn.controls.notesLabel}</Label>
-                  <Textarea
-                    rows={3}
-                    value={notes}
-                    onChange={(event) => setNotes(event.target.value)}
-                    placeholder={t.ai.tryOn.controls.notesPlaceholder}
-                  />
-                </div>
               </div>
             </CardContent>
             <CardFooter className="flex flex-wrap gap-3">

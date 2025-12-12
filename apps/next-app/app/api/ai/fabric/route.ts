@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { Buffer } from "node:buffer";
 
 const EVOLINK_API_BASE = "https://api.evolink.ai";
-const MODEL_NAME = "z-image-turbo";
+const MODEL_NAME = "gemini-3-pro-image-preview";
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
 
 const FABRIC_PRESETS = {

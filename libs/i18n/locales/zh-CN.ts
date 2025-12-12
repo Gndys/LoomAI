@@ -1051,11 +1051,129 @@ export const zhCN: Locale = {
       description: "一句话描述即可生成写真级服装模特图，帮助品牌、工厂与买手跳过拍摄环节，直接验证造型。",
       keywords: "AI 模特, 服装生图, Lookbook 生成, 文生图, 时尚 AI"
     },
+    nanoBanana: {
+      title: "Nano Banana 2 影像实验室",
+      subtitle: "快速测试 Nano Banana 2（Gemini 3）的文生图、图生图与编辑能力，适合电商模特、横幅海报或简单换装。",
+      promptTitle: "创意提示",
+      promptDescription: "描述你想要的画面。上传参考图即可切换到图生图/编辑模式。",
+      promptLabel: "提示词",
+      promptPlaceholder: "例：东京夜景街头的街潮模特，霓虹氛围光，3:4 竖版",
+      promptHelper: "建议简洁：主体 + 造型 + 光线 + 氛围。",
+      modelLabel: "模型",
+      modelHelper: "可切换极速的 Z Image Turbo、支持图生图/编辑的 Nano Banana 2 Lite，或更高质量的 Gemini 3 Pro（预览版）。",
+      sizeLabel: "画幅比例",
+      qualityLabel: "清晰度",
+      qualityHelper: "4K 会消耗更多配额，2K 性价比最佳。Z Image Turbo 不支持清晰度参数，仅使用画幅。",
+      models: {
+        "z-image-turbo": "Z Image Turbo（极速）",
+        "nano-banana-2-lite": "Nano Banana 2 Lite（图生图/编辑）",
+        "gemini-3-pro-image-preview": "Gemini 3 Pro Image Preview（高质量预览）",
+      },
+      referencesTitle: "参考图",
+      referencesDescription: "可选：拖拽上传文件用于图生图或编辑。",
+      referencesCta: "拖拽或点击上传",
+      referencesHelper: "JPG/PNG/WebP • 最多 5 张 • 单张 ≤10MB",
+      referenceHint: "第 1 张参考图权重最高。",
+      uploadCta: "从本地上传",
+      uploading: "上传中…",
+      statusTitle: "异步任务状态",
+      statusDescription: "提交后轮询进度。链接有效期 24 小时。",
+      resultTitle: "输出预览",
+      resultDescription: "展示返回列表中的第一个链接。",
+      errorState: "生成失败，可以调整提示词重试。",
+      generateCta: "使用 Nano Banana 2 生成",
+      generating: "提交中…",
+      resetCta: "重置",
+      downloadCta: "下载",
+      downloading: "下载中…",
+      badges: {
+        model: "模型：Nano Banana 2 (Gemini 3)",
+        async: "异步返回任务 ID",
+        expiry: "结果链接有效期 24 小时",
+      },
+      scenariosTitle: "快速场景",
+      scenarios: [
+        {
+          title: "电商棚拍（文生图）",
+          prompt: "中性背景的女模特，穿短款牛仔夹克和百褶中裙，柔和棚灯，3:4 竖构图。",
+        },
+        {
+          title: "街拍 Lookbook",
+          prompt: "东京小巷夜景的男模特，宽松飞行员夹克+图案 T 恤，霓虹侧光，3:4。",
+        },
+        {
+          title: "静物转上身（图生图）",
+          prompt: "将参考的静物平铺/白底图转为模特上身，布料与 LOGO 保持一致，极简棚景。",
+        },
+        {
+          title: "重光影修图",
+          prompt: "把参考人像重打暖色夕阳光，保持脸部和服装完全不变，轻微胶片颗粒。",
+        },
+      ],
+      checklistTitle: "检查清单",
+      checklistDescription: "确认输入与要跑的模式匹配。",
+      checklistItems: {
+        references: "需要图生图/编辑时请上传参考图。",
+        prompt: "主体 + 造型 + 光线 + 氛围，越具体越好。",
+        quality: "选择 1K/2K/4K，测试推荐 2K。",
+        model: "选择合适模型：Turbo 追求速度，Nano Lite 支持图生图/编辑，Gemini 质量更高。",
+      },
+      linkNotice: "结果链接 24 小时过期，需留存请及时下载。",
+      toasts: {
+        requiredPrompt: "请输入提示词。",
+        invalidType: "仅支持图片文件。",
+        fileTooLarge: "图片需小于 10MB。",
+        maxFiles: "最多上传 5 张图片。",
+        error: "任务提交失败，请重试。",
+      },
+    },
+    promptExtractor: {
+      title: "图片提示词拆解",
+      subtitle: "上传参考图片，使用 GPT-5 Nano 拆解出可直接复用的提示词。",
+      uploadTitle: "参考图片",
+      uploadDescription: "拖拽或上传一张 JPG/PNG/WebP（≤10MB），后台会转换为安全的 Data URL 调用 APIMart。",
+      uploadLimit: "单张图片 · JPG/PNG/WebP · ≤10MB",
+      dropLabel: "拖拽到这里或点击上传",
+      removeLabel: "移除图片",
+      helper: "输出包含主体、服装/材质、背景、光线、镜头语言与氛围，用逗号分隔。",
+      hintsLabel: "可选补充要求",
+      hintsPlaceholder: "例如：用英文输出，强调镜头和色调",
+      cta: "生成提示词",
+      analyzing: "解析中…",
+      resultTitle: "生成的提示词",
+      resultDescription: "复制后直接用于图生图或扩写任务。",
+      copy: "复制提示词",
+      copied: "已复制",
+      usageLabel: "Token 消耗",
+      usageTokens: {
+        prompt: "输入 Tokens",
+        completion: "输出 Tokens",
+        total: "总 Tokens",
+      },
+      badges: {
+        model: "模型：gpt-5-nano",
+        endpoint: "接口：/v1/responses",
+        vision: "支持视觉",
+      },
+      statuses: {
+        idle: "等待上传图片",
+        analyzing: "分析图片中…",
+        success: "提示词已生成",
+        error: "生成失败",
+      },
+      toasts: {
+        missingImage: "请先上传图片。",
+        invalidType: "仅支持 JPG、PNG、WebP。",
+        fileTooLarge: "图片需小于 10MB。",
+        error: "提示词生成失败，请稍后再试。",
+        success: "提示词已生成。",
+      },
+    },
     generator: {
       title: "描述款式，LoomAI 立即呈现模特",
-      subtitle: "10 秒内产出画册级上身图，Evolink Z Image Turbo 理解面料、姿势与批发物料规范。",
+      subtitle: "默认用 Z Image Turbo 极速文生图；若上传参考图，自动切换 Nano Banana 2 (Gemini 3) 做融合，理解面料、姿势与批发物料规范。",
       badges: {
-        model: "Z Image Turbo 加速",
+        model: "默认 Z Image Turbo · 参考图用 Nano Banana 2",
         turnaround: "平均 30 秒内出图",
         usage: "图片链接保留 24 小时"
       },
@@ -1071,12 +1189,17 @@ export const zhCN: Locale = {
         qualityLabel: "面料细节",
         qualityHelper: "系统锁定服装对齐点，褶皱、线迹与辅料都能保持真实。",
         ratioLabels: {
+          auto: "自动适配",
           "3:4": "3:4 画册竖图",
           "4:3": "4:3 目录横图",
           "1:1": "1:1 社媒/PDP 方图",
           "9:16": "9:16 移动端封面",
           "16:9": "16:9 活动横幅",
-          "2:3": "2:3 时装大片"
+          "2:3": "2:3 时装大片",
+          "3:2": "3:2 杂志裁切",
+          "4:5": "4:5 海报竖图",
+          "5:4": "5:4 画廊装裱",
+          "21:9": "21:9 影院长幅"
         },
         submit: "生成模特图",
         generating: "生成中…",
@@ -1084,6 +1207,35 @@ export const zhCN: Locale = {
         validation: {
           requiredPrompt: "请先描述想要生成的画面。"
         }
+      },
+      fusion: {
+        title: "参考图融合",
+        description: "上传想要融合的参考图：照片 1 固定模特身份，照片 2 完整复制衣服。",
+        badge: "图像融合",
+        helper: "拖入 JPG/PNG/WebP，最多 5 张，每张 ≤10MB。",
+        limit: "最多 5 张参考图 • JPG/PNG/WebP • 单张 ≤10MB。",
+        emptyTitle: "拖拽或点击上传参考图",
+        emptyDescription: "照片 1 = 模特参考，照片 2 = 衣服参考，额外图片可补充细节或背景。",
+        selectFiles: "选择图片",
+        addMore: "还能添加 {count} 张",
+        orderHint: "第一张锁定人物，第二张复制衣服版型与颜色。",
+        photoLabel: "照片 {index}",
+        previewAlt: "参考图 {index}",
+        removeLabel: "移除图片",
+        directiveTitle: "默认附加指令",
+        defaultPrompt: "请把模特参考图（照片 1）中的人物，穿上衣服参考图（照片 2）中的确切服装，不做其他改动。务必保持面部、性别、姿势、机位完全一致，同时 1:1 复制衣服的颜色、面料、花纹、辅料与结构细节。",
+        errors: {
+          maxFiles: "最多只可上传 5 张图片。",
+          invalidType: "仅支持图片格式。",
+          fileTooLarge: "参考图需小于 10MB。"
+        }
+      },
+      sectionNav: {
+        title: "页面导航",
+        fusion: "参考图融合",
+        prompt: "提示词输入",
+        status: "状态面板",
+        result: "生成结果"
       },
       status: {
         idle: "待生成",
@@ -1260,13 +1412,13 @@ export const zhCN: Locale = {
       hero: {
         badge: "虚拟试衣",
         title: "把街拍或 Lookbook 的衣服，直接穿到你的模特身上",
-        subtitle: "上传想要套用的模特参考图，再上传对标衣服（可为纯服装、模特上身或平铺图）。LoomAI 会保持人物、姿态与背景一致，只替换衣服。",
-        highlights: ["模特+衣服双上传", "背景/版型可控", "配饰是否保留可选"]
+        subtitle: "上传模特参考图（图 1）和衣服参考图（图 2），先上传到 OSS，再用 Nano Banana 2 (Gemini 3) 把图 1 的人物穿上图 2 的衣服。",
+        highlights: ["图 1 模特 + 图 2 衣服", "OSS 上传 + 异步任务", "Nano Banana 2 引擎"]
       },
       uploadSection: {
         title: "上传参考素材",
         description: "需要模特参考图与衣服参考图各一张。",
-        limit: "JPG/PNG，单张不超过 15MB，光线越清晰越好。",
+        limit: "JPG/PNG/WebP，单张不超过 10MB，光线越清晰越好。",
         replace: "选择文件",
         clear: "清除图片"
       },
@@ -1280,6 +1432,7 @@ export const zhCN: Locale = {
         description: "可使用平铺图、模特上身、街拍或任何对标款。",
         helper: "尽量聚焦衣服区域"
       },
+      simplePrompt: "让图 1 的人物穿上图 2 的衣服，保持身份和姿势不变。",
       controls: {
         backgroundLabel: "背景处理",
         backgroundPlaceholder: "选择背景策略",
@@ -1336,7 +1489,7 @@ export const zhCN: Locale = {
         modelRequired: "请先上传模特参考图。",
         garmentRequired: "请上传想要套用的衣服参考图。",
         invalidFileType: "仅支持图片格式。",
-        fileTooLarge: "图片需小于 15MB。",
+        fileTooLarge: "图片需小于 10MB。",
         error: "虚拟试衣失败，请稍后重试。",
         completed: "试衣已完成。"
       }
@@ -1640,9 +1793,12 @@ export const zhCN: Locale = {
   },
   header: {
     navigation: {
+      menu: "功能",
       ai: "AI 模特生成",
       fabric: "面料设计",
       tryOn: "虚拟试衣",
+      nano: "Nano 实验室",
+      promptExtractor: "图片提示词拆解",
       premiumFeatures: "高级会员功能",
       pricing: "定价"
     },

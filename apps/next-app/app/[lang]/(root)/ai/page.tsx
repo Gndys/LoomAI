@@ -1,6 +1,7 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type { DragEvent } from "react";
 import { toast } from "sonner";
 import {
   Sparkles,
@@ -11,6 +12,8 @@ import {
   Download,
   Clock,
   Image as ImageIcon,
+  UploadCloud,
+  X,
 } from "lucide-react";
 import { useTranslation } from "@/hooks/use-translation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -22,7 +25,9 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 
-const ASPECT_RATIOS = ["3:4", "4:3", "1:1", "9:16", "16:9", "2:3"] as const;
+const ASPECT_RATIOS = ["auto", "1:1", "2:3", "3:2", "3:4", "4:3", "4:5", "5:4", "9:16", "16:9", "21:9"] as const;
+const MAX_REFERENCE_IMAGES = 5;
+const MAX_REFERENCE_SIZE = 10 * 1024 * 1024; // 10 MB
 
 type GenerationStatus = "idle" | "creating" | "polling" | "completed" | "failed";
 type AspectRatio = (typeof ASPECT_RATIOS)[number];
@@ -32,6 +37,22 @@ const parseAspectRatio = (value: AspectRatio) => {
   if (!width || !height) return undefined;
   return width / height;
 };
+
+// Reads a File into a data URL for upload payloads
+function encodeFileToDataUrl(file: File) {
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === "string") {
+        resolve(reader.result);
+      } else {
+        reject(new Error("Unable to read file"));
+      }
+    };
+    reader.onerror = () => reject(new Error("Unable to read file"));
+    reader.readAsDataURL(file);
+  });
+}
 
 export default function LookbookGeneratorPage() {
   const { t } = useTranslation();
@@ -48,6 +69,9 @@ export default function LookbookGeneratorPage() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
+  const [referenceImages, setReferenceImages] = useState<Array<{ id: string; file: File; preview: string }>>([]);
+  const referenceInputRef = useRef<HTMLInputElement | null>(null);
+  const referenceStoreRef = useRef(referenceImages);
 
   const statusLabels = useMemo(
     () => ({
@@ -159,6 +183,24 @@ export default function LookbookGeneratorPage() {
       setFrameAspectRatio(parseAspectRatio(size));
 
       try {
+        let referencesPayload:
+          | Array<{
+              dataUrl: string;
+              mimeType: string;
+              size: number;
+            }>
+          | undefined;
+
+        if (referenceImages.length) {
+          referencesPayload = await Promise.all(
+            referenceImages.map(async (item) => ({
+              dataUrl: await encodeFileToDataUrl(item.file),
+              mimeType: item.file.type,
+              size: item.file.size,
+            })),
+          );
+        }
+
         const response = await fetch("/api/ai/images", {
           method: "POST",
           headers: {
@@ -167,6 +209,7 @@ export default function LookbookGeneratorPage() {
           body: JSON.stringify({
             prompt: finalPrompt,
             size,
+            references: referencesPayload,
           }),
         });
 
@@ -188,7 +231,14 @@ export default function LookbookGeneratorPage() {
         setIsSubmitting(false);
       }
     },
-    [prompt, size, t.ai.generator.form.validation.requiredPrompt, t.ai.generator.toasts.error],
+    [
+      prompt,
+      referenceImages,
+      size,
+      encodeFileToDataUrl,
+      t.ai.generator.form.validation.requiredPrompt,
+      t.ai.generator.toasts.error,
+    ],
   );
 
   const handleNewRender = () => {
@@ -271,6 +321,89 @@ export default function LookbookGeneratorPage() {
 
   const samplePrompts = t.ai.generator.samples.items;
   const imageFrameStyle = frameAspectRatio ? { aspectRatio: frameAspectRatio } : undefined;
+  const referenceSlotsRemaining = MAX_REFERENCE_IMAGES - referenceImages.length;
+  const sectionLinks = [
+    { id: "fusion", label: t.ai.generator.sectionNav.fusion },
+    { id: "prompt", label: t.ai.generator.sectionNav.prompt },
+    { id: "status", label: t.ai.generator.sectionNav.status },
+    { id: "result", label: t.ai.generator.sectionNav.result },
+  ];
+
+  useEffect(() => {
+    referenceStoreRef.current = referenceImages;
+  }, [referenceImages]);
+
+  useEffect(() => {
+    return () => {
+      referenceStoreRef.current.forEach((item) => URL.revokeObjectURL(item.preview));
+    };
+  }, []);
+
+  const createReferenceId = () => {
+    if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+      return crypto.randomUUID();
+    }
+    return Math.random().toString(36).slice(2);
+  };
+
+  const addReferenceFiles = useCallback(
+    (fileList: FileList | null) => {
+      if (!fileList) return;
+      const availableSlots = MAX_REFERENCE_IMAGES - referenceImages.length;
+      if (availableSlots <= 0) {
+        toast.error(t.ai.generator.fusion.errors.maxFiles);
+        return;
+      }
+
+      const files = Array.from(fileList).slice(0, availableSlots);
+      const accepted: Array<{ id: string; file: File; preview: string }> = [];
+
+      files.forEach((file) => {
+        if (!file.type.startsWith("image/")) {
+          toast.error(t.ai.generator.fusion.errors.invalidType);
+          return;
+        }
+
+        if (file.size > MAX_REFERENCE_SIZE) {
+          toast.error(t.ai.generator.fusion.errors.fileTooLarge);
+          return;
+        }
+
+        accepted.push({
+          id: createReferenceId(),
+          file,
+          preview: URL.createObjectURL(file),
+        });
+      });
+
+      if (accepted.length) {
+        setReferenceImages((prev) => [...prev, ...accepted]);
+      }
+    },
+    [referenceImages.length, t.ai.generator.fusion.errors.fileTooLarge, t.ai.generator.fusion.errors.invalidType, t.ai.generator.fusion.errors.maxFiles],
+  );
+
+  const removeReferenceImage = useCallback((id: string) => {
+    setReferenceImages((prev) => {
+      const target = prev.find((item) => item.id === id);
+      if (target) {
+        URL.revokeObjectURL(target.preview);
+      }
+      return prev.filter((item) => item.id !== id);
+    });
+  }, []);
+
+  const handleReferenceDrop = useCallback(
+    (event: DragEvent<HTMLDivElement>) => {
+      event.preventDefault();
+      addReferenceFiles(event.dataTransfer.files);
+    },
+    [addReferenceFiles],
+  );
+
+  const handleReferencePicker = () => {
+    referenceInputRef.current?.click();
+  };
 
   return (
     <div className="bg-background">
@@ -303,7 +436,21 @@ export default function LookbookGeneratorPage() {
             </CardHeader>
             <CardContent>
               <form onSubmit={handleSubmit} className="space-y-6">
-                <div className="space-y-3">
+                <input
+                  ref={referenceInputRef}
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  className="hidden"
+                  onChange={(event) => {
+                    addReferenceFiles(event.target.files);
+                    if (event.target) {
+                      event.target.value = "";
+                    }
+                  }}
+                />
+
+                <div className="space-y-3" id="prompt">
                   <Label htmlFor="prompt">{t.ai.generator.form.promptLabel}</Label>
                   <Textarea
                     id="prompt"
@@ -315,7 +462,12 @@ export default function LookbookGeneratorPage() {
                     onChange={(event) => setPrompt(event.target.value)}
                     className="resize-none"
                   />
-                  <p className="text-sm text-muted-foreground">{t.ai.generator.form.promptHelper}</p>
+                  <div className="flex items-center justify-between text-sm text-muted-foreground">
+                    <p>{t.ai.generator.form.promptHelper}</p>
+                    <span>
+                      {prompt.length}/2000
+                    </span>
+                  </div>
                 </div>
 
                 <div className="grid gap-6 sm:grid-cols-2">
@@ -344,6 +496,78 @@ export default function LookbookGeneratorPage() {
                   </div>
                 </div>
 
+                <div className="space-y-3 rounded-xl border bg-muted/10 p-4" id="fusion">
+                  <div className="flex items-start justify-between">
+                    <div className="space-y-1">
+                      <Label className="text-sm text-muted-foreground">
+                        {t.ai.generator.fusion.title} · {t.ai.generator.fusion.badge}
+                      </Label>
+                      <p className="text-xs text-muted-foreground">{t.ai.generator.fusion.description}</p>
+                    </div>
+                    <Badge variant="outline" className="text-xs">
+                      {t.ai.generator.fusion.optionalLabel || "可选"}
+                    </Badge>
+                  </div>
+
+                  <div
+                    className="rounded-lg border-2 border-dashed border-muted-foreground/30 bg-background/60 p-4 transition hover:border-muted-foreground/60"
+                    onDrop={handleReferenceDrop}
+                    onDragOver={(event) => event.preventDefault()}
+                    onClick={handleReferencePicker}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        handleReferencePicker();
+                      }
+                    }}
+                  >
+                    <div className="flex flex-col items-center justify-center gap-2 text-center text-muted-foreground">
+                      <UploadCloud className="size-6 text-muted-foreground" />
+                      <p className="text-sm text-foreground">{t.ai.generator.fusion.cta}</p>
+                      <p className="text-xs">{t.ai.generator.fusion.helper}</p>
+                    </div>
+
+                    {referenceImages.length > 0 && (
+                      <div className="mt-4 space-y-3">
+                        <div className="grid gap-3 sm:grid-cols-2">
+                          {referenceImages.map((image, index) => (
+                            <div key={image.id} className="group relative overflow-hidden rounded-lg border bg-background/80">
+                              <img
+                                src={image.preview}
+                                alt={t.ai.generator.fusion.previewAlt.replace("{index}", `${index + 1}`)}
+                                className="h-48 w-full object-cover"
+                              />
+                              <div className="absolute left-3 top-3 rounded-full bg-background/90 px-3 py-1 text-xs font-medium text-foreground shadow">
+                                {t.ai.generator.fusion.photoLabel.replace("{index}", `${index + 1}`)}
+                              </div>
+                              <button
+                                type="button"
+                                className="absolute right-2 top-2 rounded-full bg-background/90 p-1 text-muted-foreground shadow hover:bg-background hover:text-foreground"
+                                onClick={() => removeReferenceImage(image.id)}
+                                aria-label={t.ai.generator.fusion.removeLabel}
+                              >
+                                <X className="size-3.5" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                        <div className="flex flex-wrap items-center justify-between gap-3 text-xs text-muted-foreground">
+                          <p>{t.ai.generator.fusion.orderHint}</p>
+                          {referenceSlotsRemaining > 0 && (
+                            <Button type="button" variant="outline" size="sm" className="gap-1.5" onClick={handleReferencePicker}>
+                              <UploadCloud className="size-3.5" />
+                              {t.ai.generator.fusion.addMore.replace("{count}", `${referenceSlotsRemaining}`)}
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground">{t.ai.generator.fusion.limit}</p>
+                </div>
+
                 <div className="flex flex-wrap gap-3">
                   <Button type="submit" disabled={isSubmitting} className="gap-2">
                     {isSubmitting ? (
@@ -370,7 +594,7 @@ export default function LookbookGeneratorPage() {
           </Card>
 
           <div className="space-y-6">
-            <Card>
+            <Card id="status">
               <CardHeader>
                 <CardTitle className="text-lg">{t.ai.generator.statusCard.title}</CardTitle>
                 <CardDescription>{t.ai.generator.statusCard.description}</CardDescription>
@@ -417,7 +641,7 @@ export default function LookbookGeneratorPage() {
               </CardContent>
             </Card>
 
-            <Card>
+            <Card id="result">
               <CardHeader>
                 <CardTitle className="text-lg">{t.ai.generator.samples.title}</CardTitle>
                 <CardDescription>{t.ai.generator.samples.description}</CardDescription>

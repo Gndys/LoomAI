@@ -15,6 +15,19 @@ import { THEME_CONFIG } from '@libs/ui/themes'
 
 export function ThemeToggle() {
   const { theme, setTheme } = useTheme()
+  const [mounted, setMounted] = React.useState(false)
+
+  React.useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  if (!mounted) {
+    return (
+      <Button variant="ghost" size="sm" className="h-9 w-9" aria-hidden>
+        <Sun className="h-[1.2rem] w-[1.2rem]" />
+      </Button>
+    )
+  }
 
   return (
     <Button
@@ -32,6 +45,20 @@ export function ThemeToggle() {
 
 export function ColorSchemeToggle() {
   const { colorScheme, setColorScheme } = useTheme()
+  const [mounted, setMounted] = React.useState(false)
+
+  React.useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  if (!mounted) {
+    return (
+      <Button variant="ghost" size="sm" className="h-9 px-3" aria-hidden>
+        <Palette className="mr-2 h-4 w-4" />
+        <span className="hidden sm:inline">Loading</span>
+      </Button>
+    )
+  }
 
   return (
     <DropdownMenu>
@@ -67,6 +94,20 @@ export function ColorSchemeToggle() {
 // Combined theme selector that includes both theme and color scheme
 export function ThemeSelector() {
   const { theme, colorScheme, setTheme, setColorScheme } = useTheme()
+  const [mounted, setMounted] = React.useState(false)
+
+  React.useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  if (!mounted) {
+    return (
+      <Button variant="ghost" size="sm" className="h-9 px-3" aria-hidden>
+        <Palette className="mr-2 h-4 w-4" />
+        <span className="hidden sm:inline">Loading</span>
+      </Button>
+    )
+  }
 
   return (
     <DropdownMenu>

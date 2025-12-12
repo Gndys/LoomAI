@@ -10,13 +10,26 @@
         </div>
 
         <!-- Desktop navigation -->
-        <nav class="hidden md:flex md:space-x-8">
-          <NuxtLink 
-            :to="localePath('/ai')" 
-            class="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
-          >
-            {{ t('header.navigation.ai') }}
-          </NuxtLink>
+        <DropdownMenu>
+          <DropdownMenuTrigger as-child>
+            <Button variant="ghost" class="hidden md:inline-flex text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
+              {{ t('header.navigation.menu') }}
+              <ChevronDown class="ml-2 h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" class="w-56">
+            <DropdownMenuItem
+              v-for="item in featureLinks"
+              :key="item.to"
+              as-child
+            >
+              <NuxtLink :to="item.to" class="flex items-center text-sm text-foreground">
+                {{ item.label }}
+              </NuxtLink>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+        <nav class="hidden md:flex md:items-center md:space-x-6">
           <NuxtLink 
             :to="localePath('/premium-features')" 
             class="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
@@ -158,27 +171,45 @@
     <!-- Mobile menu -->
     <div v-if="isMenuOpen" class="md:hidden bg-background border-t border-border">
       <div class="px-2 pt-2 pb-3 space-y-1 sm:px-3">
-        <NuxtLink 
-          :to="localePath('/ai')" 
-          class="block px-3 py-2 rounded-md text-base font-medium text-foreground hover:text-foreground hover:bg-muted"
-          @click="isMenuOpen = false"
-        >
-          {{ t('header.navigation.ai') }}
-        </NuxtLink>
-        <NuxtLink 
-          :to="localePath('/premium-features')" 
-          class="block px-3 py-2 rounded-md text-base font-medium text-foreground hover:text-foreground hover:bg-muted"
-          @click="isMenuOpen = false"
-        >
-          {{ t('header.navigation.premiumFeatures') }}
-        </NuxtLink>
-        <NuxtLink 
-          :to="localePath('/pricing')" 
-          class="block px-3 py-2 rounded-md text-base font-medium text-foreground hover:text-foreground hover:bg-muted"
-          @click="isMenuOpen = false"
-        >
-          {{ t('header.navigation.pricing') }}
-        </NuxtLink>
+        <DropdownMenu>
+          <DropdownMenuTrigger as-child>
+            <Button variant="outline" class="w-full justify-between">
+              <span class="text-base font-medium text-foreground">{{ t('header.navigation.menu') }}</span>
+              <ChevronDown class="h-4 w-4 text-muted-foreground" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" class="w-full">
+            <DropdownMenuItem
+              v-for="item in featureLinks"
+              :key="item.to"
+              as-child
+            >
+              <NuxtLink
+                :to="item.to"
+                class="block w-full text-base"
+                @click="isMenuOpen = false"
+              >
+                {{ item.label }}
+              </NuxtLink>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+        <div class="grid grid-cols-2 gap-2">
+          <NuxtLink 
+            :to="localePath('/premium-features')" 
+            class="block px-3 py-2 rounded-md text-base font-medium text-foreground hover:text-foreground hover:bg-muted text-center"
+            @click="isMenuOpen = false"
+          >
+            {{ t('header.navigation.premiumFeatures') }}
+          </NuxtLink>
+          <NuxtLink 
+            :to="localePath('/pricing')" 
+            class="block px-3 py-2 rounded-md text-base font-medium text-foreground hover:text-foreground hover:bg-muted text-center"
+            @click="isMenuOpen = false"
+          >
+            {{ t('header.navigation.pricing') }}
+          </NuxtLink>
+        </div>
         
         <!-- Mobile Theme and Language Controls -->
         <div class="border-t border-border pt-3 mt-3 space-y-2">
@@ -268,8 +299,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
-import { Check } from 'lucide-vue-next'
+import { computed, ref } from 'vue'
+import { Check, ChevronDown } from 'lucide-vue-next'
 // Reactive state
 const isMenuOpen = ref(false)
 
@@ -277,6 +308,10 @@ const isMenuOpen = ref(false)
 const { t, locale, locales } = useI18n()
 const localePath = useLocalePath()
 const switchLocalePath = useSwitchLocalePath()
+const featureLinks = computed(() => [
+  { to: localePath('/ai'), label: t('header.navigation.ai') },
+  { to: localePath('/ai/nano-banana'), label: t('header.navigation.nano') },
+])
 
 // Authentication
 const { user, signOut } = useAuth()

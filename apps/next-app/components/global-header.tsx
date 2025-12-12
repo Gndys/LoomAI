@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "./ui/button";
 import { Logo } from "./ui/logo";
 import { authClientReact } from "@libs/auth/authClient";
@@ -17,7 +17,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
-import { Check, Globe } from "lucide-react";
+import { Check, ChevronDown, Globe } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { type SupportedLocale, locales } from "@libs/i18n";
 import { useTranslation } from "@/hooks/use-translation";
@@ -29,15 +29,27 @@ interface HeaderProps {
 
 export default function Header({ className }: HeaderProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [hasHydrated, setHasHydrated] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
   const { t, locale: currentLocale } = useTranslation();
   
-  const { 
-    data: session, 
-    isPending
+  const {
+    data: session,
+    isPending,
   } = authClientReact.useSession();
   const user = session?.user;
+  const featureLinks = [
+    { href: `/${currentLocale}/ai`, label: t.header.navigation.ai },
+    { href: `/${currentLocale}/ai/fabric-design`, label: t.header.navigation.fabric },
+    { href: `/${currentLocale}/ai/try-on`, label: t.header.navigation.tryOn },
+    { href: `/${currentLocale}/ai/nano-banana`, label: t.header.navigation.nano },
+    { href: `/${currentLocale}/ai/prompt-extractor`, label: t.header.navigation.promptExtractor },
+  ];
+
+  useEffect(() => {
+    setHasHydrated(true);
+  }, []);
 
   const handleSignOut = async () => {
     await authClientReact.signOut();
@@ -71,20 +83,34 @@ export default function Header({ className }: HeaderProps) {
           </div>
 
           {/* Desktop navigation */}
-          <nav className="hidden md:flex md:space-x-8">
-            <Link href={`/${currentLocale}/ai`} className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
-              {t.header.navigation.ai}
-            </Link>
-            <Link href={`/${currentLocale}/ai/fabric-design`} className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
-              {t.header.navigation.fabric}
-            </Link>
-            <Link href={`/${currentLocale}/ai/try-on`} className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
-              {t.header.navigation.tryOn}
-            </Link>
-            <Link href={`/${currentLocale}/premium-features`} className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className="hidden md:inline-flex text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
+                {t.header.navigation.menu}
+                <ChevronDown className="ml-2 h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-56">
+              {featureLinks.map((link) => (
+                <DropdownMenuItem key={link.href} asChild>
+                  <Link href={link.href} className="flex items-center text-sm text-foreground">
+                    {link.label}
+                  </Link>
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <nav className="hidden md:flex md:items-center md:space-x-6">
+            <Link
+              href={`/${currentLocale}/premium-features`}
+              className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+            >
               {t.header.navigation.premiumFeatures}
             </Link>
-            <Link href={`/${currentLocale}/pricing`} className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
+            <Link
+              href={`/${currentLocale}/pricing`}
+              className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+            >
               {t.header.navigation.pricing}
             </Link>
           </nav>
@@ -120,7 +146,9 @@ export default function Header({ className }: HeaderProps) {
               </DropdownMenuContent>
             </DropdownMenu>
 
-            {isPending ? (
+            {!hasHydrated ? (
+              <div className="h-8 w-8 rounded-full bg-muted animate-pulse" aria-hidden="true"></div>
+            ) : isPending ? (
               <div className="h-8 w-8 rounded-full bg-muted animate-pulse"></div>
             ) : user ? (
               <DropdownMenu>
@@ -218,21 +246,43 @@ export default function Header({ className }: HeaderProps) {
           {isMenuOpen && (
         <div className="md:hidden bg-background border-t border-border">
           <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
-            <Link href={`/${currentLocale}/ai`} className="block px-3 py-2 rounded-md text-base font-medium text-foreground hover:text-foreground hover:bg-muted">
-              {t.header.navigation.ai}
-            </Link>
-            <Link href={`/${currentLocale}/ai/fabric-design`} className="block px-3 py-2 rounded-md text-base font-medium text-foreground hover:text-foreground hover:bg-muted">
-              {t.header.navigation.fabric}
-            </Link>
-            <Link href={`/${currentLocale}/ai/try-on`} className="block px-3 py-2 rounded-md text-base font-medium text-foreground hover:text-foreground hover:bg-muted">
-              {t.header.navigation.tryOn}
-            </Link>
-            <Link href={`/${currentLocale}/premium-features`} className="block px-3 py-2 rounded-md text-base font-medium text-foreground hover:text-foreground hover:bg-muted">
-              {t.header.navigation.premiumFeatures}
-            </Link>
-            <Link href={`/${currentLocale}/pricing`} className="block px-3 py-2 rounded-md text-base font-medium text-foreground hover:text-foreground hover:bg-muted">
-              {t.header.navigation.pricing}
-            </Link>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" className="w-full justify-between">
+                  <span className="text-base font-medium text-foreground">{t.header.navigation.menu}</span>
+                  <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="w-full">
+                {featureLinks.map((link) => (
+                  <DropdownMenuItem key={link.href} asChild>
+                    <Link
+                      href={link.href}
+                      className="block w-full text-base"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      {link.label}
+                    </Link>
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+            <div className="grid grid-cols-2 gap-2">
+              <Link
+                href={`/${currentLocale}/premium-features`}
+                className="block px-3 py-2 rounded-md text-base font-medium text-foreground hover:text-foreground hover:bg-muted text-center"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                {t.header.navigation.premiumFeatures}
+              </Link>
+              <Link
+                href={`/${currentLocale}/pricing`}
+                className="block px-3 py-2 rounded-md text-base font-medium text-foreground hover:text-foreground hover:bg-muted text-center"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                {t.header.navigation.pricing}
+              </Link>
+            </div>
             
             {/* Mobile Theme and Language Controls */}
             <div className="border-t border-border pt-3 mt-3 space-y-2">
