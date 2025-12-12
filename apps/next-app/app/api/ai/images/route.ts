@@ -26,10 +26,9 @@ const DEFAULT_FUSION_DIRECTIVE =
 
 const requestSchema = z.object({
   prompt: z
-    .string({
-      required_error: "Prompt is required",
-    })
+    .string()
     .trim()
+    .min(1, "Prompt is required")
     .min(5, "Prompt must be at least 5 characters")
     .max(2000, "Prompt must be less than 2000 characters"),
   size: z.enum(SIZE_OPTIONS).optional().default("3:4"),

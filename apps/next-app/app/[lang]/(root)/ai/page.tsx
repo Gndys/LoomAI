@@ -1,6 +1,7 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState, type DragEvent, type JSX } from "react";
+import type { DragEvent, ReactElement } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import {
   Sparkles,
@@ -83,7 +84,7 @@ export default function LookbookGeneratorPage() {
     [t],
   );
 
-  const statusIcons: Record<GenerationStatus, JSX.Element> = {
+  const statusIcons: Record<GenerationStatus, ReactElement> = {
     idle: <Sparkles className="size-3.5" />,
     creating: <Loader2 className="size-3.5 animate-spin" />,
     polling: <Loader2 className="size-3.5 animate-spin" />,

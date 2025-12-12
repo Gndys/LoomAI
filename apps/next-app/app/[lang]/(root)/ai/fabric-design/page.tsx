@@ -1,6 +1,6 @@
 "use client";
 
-import type { JSX } from "react";
+import type { ReactElement } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import {
@@ -140,7 +140,7 @@ export default function FabricDesignPage() {
     [t],
   );
 
-  const statusIcons: Record<GenerationStatus, JSX.Element> = {
+  const statusIcons: Record<GenerationStatus, ReactElement> = {
     idle: <Sparkles className="size-3.5" />,
     creating: <UploadCloud className="size-3.5 animate-spin" />,
     polling: <Clock className="size-3.5 animate-spin" />,

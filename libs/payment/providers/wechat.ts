@@ -151,7 +151,8 @@ export class WechatPayProvider implements PaymentProvider {
 
   private getSerialNumber(certificateData: Buffer): string {
     try {
-      const certificate = new X509Certificate(certificateData);
+      const certificateBuffer = new Uint8Array(certificateData).buffer;
+      const certificate = new X509Certificate(certificateBuffer);
       return certificate.serialNumber;
     } catch (error) {
       console.error('Error getting certificate serial number:', error);
@@ -185,7 +186,8 @@ export class WechatPayProvider implements PaymentProvider {
           );
           
           // 使用 X509Certificate 解析证书并获取公钥
-          const certificate = new X509Certificate(Buffer.from(decryptedCertificate));
+          const certificateBuffer = new Uint8Array(Buffer.from(decryptedCertificate)).buffer;
+          const certificate = new X509Certificate(certificateBuffer);
           this.platformCertificates.set(item.serial_no, certificate.publicKey.toString());
         }
         

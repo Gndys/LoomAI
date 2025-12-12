@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState, type JSX } from "react";
+import type { MutableRefObject, ReactElement } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useTranslation } from "@/hooks/use-translation";
 import { Badge } from "@/components/ui/badge";
@@ -53,7 +54,7 @@ export default function VirtualTryOnPage() {
     [t],
   );
 
-  const statusIcons: Record<GenerationStatus, JSX.Element> = {
+  const statusIcons: Record<GenerationStatus, ReactElement> = {
     idle: <Sparkles className="size-3.5" />,
     creating: <UploadCloud className="size-3.5 animate-spin" />,
     polling: <Clock className="size-3.5 animate-spin" />,
@@ -498,7 +499,7 @@ interface UploadPanelProps {
   previewUrl: string | null;
   fileName?: string;
   onFile: (file: File | null) => void;
-  inputRef: React.RefObject<HTMLInputElement>;
+  inputRef: MutableRefObject<HTMLInputElement | null>;
 }
 
 function UploadPanel({

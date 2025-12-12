@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState, useTransition, type JSX } from "react";
+import type { ReactElement } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { useTranslation } from "@/hooks/use-translation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -67,7 +68,7 @@ export default function NanoBananaLabPage() {
     [t],
   );
 
-  const statusIcons: Record<GenerationStatus, JSX.Element> = {
+  const statusIcons: Record<GenerationStatus, ReactElement> = {
     idle: <Sparkles className="size-3.5" />,
     creating: <Loader2 className="size-3.5 animate-spin" />,
     polling: <Loader2 className="size-3.5 animate-spin" />,

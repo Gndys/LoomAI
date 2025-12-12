@@ -11,8 +11,9 @@ const MAX_REFERENCE_IMAGES = 5;
 const requestSchema = z.object({
   model: z.enum(MODEL_OPTIONS).default("z-image-turbo"),
   prompt: z
-    .string({ required_error: "Prompt is required" })
+    .string()
     .trim()
+    .min(1, "Prompt is required")
     .min(5, "Prompt must be at least 5 characters")
     .max(2000, "Prompt must be less than 2000 characters"),
   size: z.enum(SIZE_OPTIONS).optional().default("auto"),
