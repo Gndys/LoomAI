@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type JSX } from "react";
 import { toast } from "sonner";
 import { useTranslation } from "@/hooks/use-translation";
 import { Badge } from "@/components/ui/badge";

@@ -1,0 +1,6 @@
+{
+  "framework": "nextjs",
+  "installCommand": "pnpm install --frozen-lockfile",
+  "buildCommand": "pnpm turbo run build --filter=@tinyship/next-app",
+  "outputDirectory": "apps/next-app/.next"
+}

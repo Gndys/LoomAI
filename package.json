@@ -8,6 +8,7 @@
   },
   "packageManager": "pnpm@9.4.0",
   "scripts": {
+    "build": "pnpm turbo run build --filter=@tinyship/next-app",
     "dev:next": "turbo run dev --filter=@tinyship/next-app",
     "dev:nuxt": "turbo run dev --filter=@tinyship/nuxt-app",
     "build:next": "turbo run build --filter=@tinyship/next-app",

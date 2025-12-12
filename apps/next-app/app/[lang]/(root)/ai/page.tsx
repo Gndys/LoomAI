@@ -1,7 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { DragEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type DragEvent, type JSX } from "react";
 import { toast } from "sonner";
 import {
   Sparkles,
