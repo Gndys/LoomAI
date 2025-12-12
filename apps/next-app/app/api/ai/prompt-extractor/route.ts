@@ -6,53 +6,111 @@ const ALLOWED_MIME = new Set(["image/jpeg", "image/jpg", "image/png", "image/web
 const API_ENDPOINT = "https://api.apimart.ai/v1/responses";
 const SYSTEM_PROMPT =
   "You are a prompt extractor for text-to-image models. Read the image and return a concise, comma-separated prompt covering subject, outfit/material cues, background, lighting, camera framing, and mood. Keep it actionable for generation.";
+const MAX_OUTPUT_TOKENS = 768;
 
 function extractPromptFromResponse(body: any): string | null {
-  if (typeof body?.output_text === "string") {
-    return body.output_text.trim();
-  }
-
-  if (Array.isArray(body?.output)) {
-    const merged = body.output
-      .map((item: any) => {
-        if (typeof item?.text === "string") return item.text;
-        if (typeof item?.content === "string") return item.content;
-        if (Array.isArray(item?.content)) {
-          return item.content
-            .map((part: any) => {
-              if (typeof part === "string") return part;
-              if (typeof part?.text === "string") return part.text;
-              return "";
-            })
-            .filter(Boolean)
-            .join(" ");
-        }
-        return "";
-      })
-      .filter(Boolean)
-      .join("\n")
-      .trim();
-
-    if (merged) return merged;
-  }
-
-  const choiceContent = body?.choices?.[0]?.message?.content;
-  if (typeof choiceContent === "string") {
-    return choiceContent.trim();
-  }
-
-  if (Array.isArray(choiceContent)) {
-    const merged = choiceContent
+  const getString = (value: any) => (typeof value === "string" ? value.trim() : "");
+  const extractFromParts = (parts: any[]): string =>
+    parts
       .map((part: any) => {
         if (typeof part === "string") return part;
-        if (typeof part?.text === "string") return part.text;
+        const direct =
+          getString(part?.output_text) ||
+          getString(part?.text) ||
+          getString(part?.content);
+        if (direct) return direct;
+        if (Array.isArray(part?.content)) return extractFromParts(part.content);
+        if (Array.isArray(part?.message?.content)) {
+          return extractFromParts(part.message.content);
+        }
+        const messageContent = getString(part?.message?.content);
+        if (messageContent) return messageContent;
         return "";
       })
       .filter(Boolean)
       .join(" ")
       .trim();
+
+  if (typeof body === "string") {
+    return getString(body) || null;
+  }
+
+  if (Array.isArray(body)) {
+    const merged = extractFromParts(body);
     if (merged) return merged;
   }
+
+  const extractFromOutput = (output: any): string | null => {
+    if (!output) return null;
+
+    if (typeof output === "string") {
+      const normalized = getString(output);
+      return normalized || null;
+    }
+
+    if (Array.isArray(output)) {
+      const merged = extractFromParts(output);
+      return merged || null;
+    }
+
+    if (typeof output === "object") {
+      const direct =
+        getString(output?.output_text) ||
+        getString(output?.text) ||
+        getString(output?.content) ||
+        getString(output?.message?.content);
+      if (direct) return direct;
+
+      if (Array.isArray(output?.content)) {
+        const merged = extractFromParts(output.content);
+        if (merged) return merged;
+      }
+
+      if (Array.isArray(output?.message?.content)) {
+        const merged = extractFromParts(output.message.content);
+        if (merged) return merged;
+      }
+
+      if (Array.isArray(output?.data)) {
+        const merged = extractFromParts(output.data);
+        if (merged) return merged;
+      }
+    }
+
+    return null;
+  };
+
+  const direct =
+    getString(body?.output_text) ||
+    getString(body?.text) ||
+    getString(body?.content) ||
+    getString(body?.result);
+  if (direct) return direct;
+
+  const outputCandidates = [
+    body?.output,
+    body?.data?.output,
+    body?.response?.output,
+    body?.data?.response?.output,
+  ];
+  for (const candidate of outputCandidates) {
+    const merged = extractFromOutput(candidate);
+    if (merged) return merged;
+  }
+
+  const choices = body?.choices ?? body?.data?.choices ?? body?.response?.choices ?? body?.data?.response?.choices;
+  const choiceContent = choices?.[0]?.message?.content ?? choices?.[0]?.content;
+  const choiceMerged = extractFromOutput(choiceContent);
+  if (choiceMerged) return choiceMerged;
+
+  const messageMerged = extractFromOutput(body?.message?.content);
+  if (messageMerged) return messageMerged;
+
+  const responseMessageMerged = extractFromOutput(body?.response?.message?.content);
+  if (responseMessageMerged) return responseMessageMerged;
+
+  const nestedDataMerged = extractFromOutput(body?.data);
+  if (nestedDataMerged) return nestedDataMerged;
 
   return null;
 }
@@ -111,9 +169,8 @@ export async function POST(request: Request) {
           ],
         },
       ],
-      temperature: 0.35,
-      top_p: 0.9,
-      max_output_tokens: 320,
+      reasoning: { effort: "low" }, // reduce reasoning tokens consumption
+      max_output_tokens: MAX_OUTPUT_TOKENS,
     };
 
     const response = await fetch(API_ENDPOINT, {
@@ -141,11 +198,20 @@ export async function POST(request: Request) {
     }
 
     const body = data?.data ?? data;
+
+    if (body?.status === "incomplete") {
+      const reason = body?.incomplete_details?.reason || "unknown";
+      return NextResponse.json(
+        { error: `APIMart response incomplete: ${reason}`, details: body },
+        { status: 502 },
+      );
+    }
+
     const prompt = extractPromptFromResponse(body);
 
     if (!prompt) {
       return NextResponse.json(
-        { error: "No prompt returned from APIMart response" },
+        { error: "No prompt returned from APIMart response", details: body },
         { status: 502 },
       );
     }
