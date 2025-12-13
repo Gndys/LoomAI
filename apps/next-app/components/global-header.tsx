@@ -83,23 +83,30 @@ export default function Header({ className }: HeaderProps) {
           </div>
 
           {/* Desktop navigation */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="hidden md:inline-flex text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
-                {t.header.navigation.menu}
-                <ChevronDown className="ml-2 h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-56">
-              {featureLinks.map((link) => (
-                <DropdownMenuItem key={link.href} asChild>
-                  <Link href={link.href} className="flex items-center text-sm text-foreground">
-                    {link.label}
-                  </Link>
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
+          {hasHydrated ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  className="hidden md:inline-flex text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  {t.header.navigation.menu}
+                  <ChevronDown className="ml-2 h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="w-56">
+                {featureLinks.map((link) => (
+                  <DropdownMenuItem key={link.href} asChild>
+                    <Link href={link.href} className="flex items-center text-sm text-foreground">
+                      {link.label}
+                    </Link>
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+            <div className="hidden md:block h-9 w-[120px] rounded-md bg-muted animate-pulse" aria-hidden="true" />
+          )}
           <nav className="hidden md:flex md:items-center md:space-x-6">
             <Link
               href={`/${currentLocale}/premium-features`}
@@ -118,33 +125,42 @@ export default function Header({ className }: HeaderProps) {
           {/* User menu or Auth buttons */}
           <div className="hidden md:flex items-center space-x-4">
             {/* Dark Mode Toggle */}
-            <ThemeToggle />
+            {hasHydrated ? (
+              <ThemeToggle />
+            ) : (
+              <div className="h-9 w-9 rounded-md bg-muted animate-pulse" aria-hidden="true" />
+            )}
             
             {/* Color Scheme Selector */}
-            <ColorSchemeToggle />
+            {hasHydrated ? (
+              <ColorSchemeToggle />
+            ) : (
+              <div className="h-9 w-9 rounded-md bg-muted animate-pulse" aria-hidden="true" />
+            )}
 
             {/* Language Selector */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="h-9 px-3">
-                  <Globe className="mr-2 h-4 w-4" />
-                  <span className="hidden sm:inline">
-                    {currentLocale === 'en' ? t.header.language.english : t.header.language.chinese}
-                  </span>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                {locales.map((locale) => (
-                  <DropdownMenuItem
-                    key={locale}
-                    onClick={() => handleLanguageChange(locale)}
-                  >
-                    <span>{locale === 'en' ? t.header.language.english : t.header.language.chinese}</span>
-                    {currentLocale === locale && <Check className="ml-auto h-4 w-4" />}
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
+            {hasHydrated ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm" className="h-9 px-3">
+                    <Globe className="mr-2 h-4 w-4" />
+                    <span className="hidden sm:inline">
+                      {currentLocale === "en" ? t.header.language.english : t.header.language.chinese}
+                    </span>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  {locales.map((locale) => (
+                    <DropdownMenuItem key={locale} onClick={() => handleLanguageChange(locale)}>
+                      <span>{locale === "en" ? t.header.language.english : t.header.language.chinese}</span>
+                      {currentLocale === locale && <Check className="ml-auto h-4 w-4" />}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <div className="h-9 w-[96px] rounded-md bg-muted animate-pulse" aria-hidden="true" />
+            )}
 
             {!hasHydrated ? (
               <div className="h-8 w-8 rounded-full bg-muted animate-pulse" aria-hidden="true"></div>
@@ -289,32 +305,42 @@ export default function Header({ className }: HeaderProps) {
               <div className="flex items-center justify-between px-3 py-2">
                 <span className="text-sm font-medium text-foreground">{t.header.mobile.themeSettings}</span>
                 <div className="flex items-center space-x-2">
-                  <ThemeToggle />
-                  <ColorSchemeToggle />
+                  {hasHydrated ? (
+                    <>
+                      <ThemeToggle />
+                      <ColorSchemeToggle />
+                    </>
+                  ) : (
+                    <>
+                      <div className="h-9 w-9 rounded-md bg-muted animate-pulse" aria-hidden="true" />
+                      <div className="h-9 w-9 rounded-md bg-muted animate-pulse" aria-hidden="true" />
+                    </>
+                  )}
                 </div>
               </div>
               <div className="px-3 py-2">
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium text-foreground">{t.header.mobile.languageSelection}</span>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="sm">
-                        <Globe className="mr-2 h-4 w-4" />
-                        {currentLocale === 'en' ? t.header.language.english : t.header.language.chinese}
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      {locales.map((locale) => (
-                        <DropdownMenuItem
-                          key={locale}
-                          onClick={() => handleLanguageChange(locale)}
-                        >
-                          <span>{locale === 'en' ? t.header.language.english : t.header.language.chinese}</span>
-                          {currentLocale === locale && <Check className="ml-auto h-4 w-4" />}
-                        </DropdownMenuItem>
-                      ))}
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                  {hasHydrated ? (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="sm">
+                          <Globe className="mr-2 h-4 w-4" />
+                          {currentLocale === "en" ? t.header.language.english : t.header.language.chinese}
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        {locales.map((locale) => (
+                          <DropdownMenuItem key={locale} onClick={() => handleLanguageChange(locale)}>
+                            <span>{locale === "en" ? t.header.language.english : t.header.language.chinese}</span>
+                            {currentLocale === locale && <Check className="ml-auto h-4 w-4" />}
+                          </DropdownMenuItem>
+                        ))}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  ) : (
+                    <div className="h-9 w-[110px] rounded-md bg-muted animate-pulse" aria-hidden="true" />
+                  )}
                 </div>
               </div>
             </div>

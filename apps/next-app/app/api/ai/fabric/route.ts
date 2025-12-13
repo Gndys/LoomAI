@@ -1,9 +1,12 @@
 import { NextResponse } from "next/server";
 import { Buffer } from "node:buffer";
 
-const EVOLINK_API_BASE = "https://api.evolink.ai";
+const normalizeBaseUrl = (baseUrl: string) => baseUrl.replace(/\/v1\/?$/, "");
+
+const EVOLINK_BASE_URL = normalizeBaseUrl(process.env.EVOLINK_BASE_URL || "https://api.evolink.ai");
 const MODEL_NAME = "gemini-3-pro-image-preview";
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
+const ALLOWED_SIZES = new Set(["1:1", "2:3", "3:2"]);
 
 const FABRIC_PRESETS = {
   silk: {
@@ -45,6 +48,16 @@ const parseNumberField = (value: FormDataEntryValue | null, fallback: number, mi
   return clampNumber(Number.isFinite(parsed) ? parsed : fallback, min, max);
 };
 
+const normalizeStatus = (status?: string | null) => {
+  const value = status?.toLowerCase();
+  if (!value) return "submitted";
+  if (["completed", "succeeded", "success", "done"].includes(value)) return "completed";
+  if (["failed", "error", "canceled", "cancelled"].includes(value)) return "failed";
+  return value;
+};
+
+const normalizeSize = (size: string) => (ALLOWED_SIZES.has(size) ? size : "2:3");
+
 const buildPrompt = (fields: FabricJobFields) => {
   const preset = fields.fabricType === "custom" ? null : FABRIC_PRESETS[fields.fabricType];
   const fabricDescriptor = fields.fabricLabel || preset?.label || "textile";
@@ -74,6 +87,7 @@ const buildPrompt = (fields: FabricJobFields) => {
   segments.push(
     `Honor the existing seams and construction; do not hallucinate new trims unless explicitly described.`,
     `Ensure the fabric simulation stays consistent across the full garment.`,
+    `Keep texture strength near ${Math.round(fields.textureStrength * 100)}% and pattern scale near ${Math.round(fields.patternScale * 100)}%.`,
   );
 
   return segments.join(" ");
@@ -148,35 +162,18 @@ export async function POST(request: Request) {
 
     const buffer = Buffer.from(await file.arrayBuffer());
     const base64Image = buffer.toString("base64");
+    const referenceDataUrl = `data:${file.type};base64,${base64Image}`;
 
     const payload: Record<string, unknown> = {
       model: MODEL_NAME,
       prompt: buildPrompt(jobFields),
-      size: "3:4",
+      size: normalizeSize("3:4"),
+      n: 1,
+      image_urls: [referenceDataUrl],
       nsfw_check: false,
-      reference_image_base64: base64Image,
-      reference_image_mime: file.type,
-      preserve_identity: jobFields.lockModel,
-      preserve_background: jobFields.preserveBackground,
-      fabric_texture_strength: jobFields.textureStrength,
-      pattern_scale: jobFields.patternScale,
     };
 
-    if (patternPrompt) {
-      payload.pattern_prompt = patternPrompt;
-    }
-
-    if (advancedPrompt) {
-      payload.notes = advancedPrompt;
-    }
-
-    if (jobFields.fabricType !== "custom") {
-      payload.fabric_hint = FABRIC_PRESETS[jobFields.fabricType as PresetFabric].prompt;
-    } else {
-      payload.fabric_hint = fabricLabel;
-    }
-
-    const response = await fetch(`${EVOLINK_API_BASE}/v1/images/generations`, {
+    const response = await fetch(`${EVOLINK_BASE_URL}/v1/images/generations`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -187,22 +184,26 @@ export async function POST(request: Request) {
 
     const data = await response.json();
 
-    if (!response.ok) {
+    const isErrorCode = typeof data?.code === "number" && data.code !== 200;
+
+    if (!response.ok || isErrorCode) {
       console.error("Failed to start fabric render:", data);
       return NextResponse.json(
         {
-          error: data.error?.message || "Failed to start fabric design task",
+          error: data.error?.message || data?.message || "Failed to start fabric design task",
           details: data,
         },
-        { status: response.status },
+        { status: response.ok ? 400 : response.status },
       );
     }
 
+    const body = Array.isArray(data?.data) ? data.data[0] : data?.data ?? data;
+
     return NextResponse.json({
-      taskId: data.id,
-      status: data.status,
-      progress: data.progress ?? 0,
-      estimatedTime: data.task_info?.estimated_time ?? null,
+      taskId: body?.task_id ?? body?.id ?? null,
+      status: normalizeStatus(body?.status),
+      progress: body?.progress ?? 0,
+      estimatedTime: body?.estimated_time ?? null,
     });
   } catch (error) {
     console.error("Unexpected fabric design error:", error);

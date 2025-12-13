@@ -1079,9 +1079,10 @@ export const zhCN: Locale = {
       statusTitle: "异步任务状态",
       statusDescription: "提交后轮询进度。链接有效期 24 小时。",
       resultTitle: "输出预览",
-      resultDescription: "展示返回列表中的第一个链接。",
+      resultDescription: "瀑布流展示已完成结果，支持查看提示词与参考图对比。",
       errorState: "生成失败，可以调整提示词重试。",
       generateCta: "使用 Nano Banana 2 生成",
+      generateCtaTemplate: "使用 {model} 生成",
       generating: "提交中…",
       resetCta: "重置",
       downloadCta: "下载",
@@ -1094,20 +1095,9 @@ export const zhCN: Locale = {
       scenariosTitle: "快速场景",
       scenarios: [
         {
-          title: "电商棚拍（文生图）",
-          prompt: "中性背景的女模特，穿短款牛仔夹克和百褶中裙，柔和棚灯，3:4 竖构图。",
-        },
-        {
-          title: "街拍 Lookbook",
-          prompt: "东京小巷夜景的男模特，宽松飞行员夹克+图案 T 恤，霓虹侧光，3:4。",
-        },
-        {
-          title: "静物转上身（图生图）",
-          prompt: "将参考的静物平铺/白底图转为模特上身，布料与 LOGO 保持一致，极简棚景。",
-        },
-        {
-          title: "重光影修图",
-          prompt: "把参考人像重打暖色夕阳光，保持脸部和服装完全不变，轻微胶片颗粒。",
+          title: "小红书 OOTD 拆解拼贴",
+          prompt:
+            "【终极 OOTD 拆解 & 时尚杂志拼贴生成 Prompt（强执行版）】\n\nSYSTEM（角色设定：必须执行）\nYou are a professional fashion editor and visual designer specializing in OOTD collage magazines.\nYour job: Use the uploaded image as the ONLY reference for the left-side person.\nNever change the model’s face, body shape, hairstyle, pose, ethnicity, gender, or outfit silhouette.\nYou must generate a clean, high-end OOTD layout.\n你是一位专注于 OOTD 拼贴杂志的专业时尚编辑和视觉设计师。\n你的工作是：用上传的图片作为左侧人物唯一的参考。\n切勿更改模特的脸型、体型、发型、姿势、种族、性别或服装轮廓。\n你必须生成一个干净、高端的 OOTD 布局。\n\nPROMPT\nProfessional OOTD fashion collage, premium magazine editorial layout, 16:9 horizontal, clean split composition: Left 60% / Right 40%. Modern Xiaohongshu / Instagram blogger style.\n专业 OOTD 时尚拼贴，高端杂志编辑版面，16:9 横向，干净的分段构图：左 60%，右 40%。现代小红书/Instagram 博主风格。\n\nLEFT SIDE — STRICTLY based on the uploaded photo\n左侧——完全基于上传的照片\nUse the person in the input image as-is. Keep:\n• same face\n• same hairstyle\n• same outfit\n• same pose\n• same proportions & body shape\n• same style & vibe\n直接使用输入图片中的人物即可。保持：\n• 同一张脸\n• 发型相同\n• 同一套服装\n• 同样的姿势\n• 比例和体型相同\n• 风格与氛围相同\nRender style:\nhigh-end DSLR street photography, realistic, bright natural light, light bokeh, subtle city background.\nFeel like a magazine street snap.\n渲染风格：\n高端单反街拍，逼真明亮的自然光，散景透光，细腻的城市背景。\n感觉像杂志上的街头快照。\nDo NOT redesign or change the outfit.\nDo NOT use a different model.\nDo NOT generate a cartoon / illustration.\n不要重新设计或更换服装。\n千万不要用其他模特。\n请勿生成卡通或插图。\n\nRIGHT SIDE — Product Breakdown Grid\n右侧 — 产品分解网格\nClean white background, editorial product grid.\nVertical modules = pick 5–6 items actually worn by the person in the uploaded photo (top, bottom, shoes, bag, accessories, etc.).\n干净的白色背景，编辑产品网格。\n垂直模块 = 选择上传照片中人物实际穿戴的 5–6 件物品（上衣、下装、鞋子、包包、配饰等）。\nEach module contains:\n1. Clean cut-out photo of the item\n2. Brand (English)\n3. Chinese item name\n4. Price (“¥xxx”)\n每个模块包含：\n1. 物品的干净剪纸照片\n2. 品牌（英文）\n3. 中文物品名称\n4. 价格（“¥xxx”）",
         },
       ],
       checklistTitle: "检查清单",
@@ -1171,9 +1161,9 @@ export const zhCN: Locale = {
     },
     generator: {
       title: "描述款式，LoomAI 立即呈现模特",
-      subtitle: "默认用 Z Image Turbo 极速文生图；若上传参考图，自动切换 Nano Banana 2 (Gemini 3) 做融合，理解面料、姿势与批发物料规范。",
+      subtitle: "默认用 Z Image Turbo 极速文生图；若上传参考图，自动切换 Gemini 2.5 Flash Image Preview 做融合，理解面料、姿势与批发物料规范。",
       badges: {
-        model: "默认 Z Image Turbo · 参考图用 Nano Banana 2",
+        model: "默认 Z Image Turbo · 参考图用 Gemini 2.5",
         turnaround: "平均 30 秒内出图",
         usage: "图片链接保留 24 小时"
       },

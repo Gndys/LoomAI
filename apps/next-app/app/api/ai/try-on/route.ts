@@ -1,9 +1,22 @@
 import { NextResponse } from "next/server";
 
-const EVOLINK_API_BASE = "https://api.evolink.ai";
+const normalizeBaseUrl = (baseUrl: string) => baseUrl.replace(/\/v1\/?$/, "");
+
+const EVOLINK_BASE_URL = normalizeBaseUrl(process.env.EVOLINK_BASE_URL || "https://api.evolink.ai");
 const MODEL_NAME = "gemini-3-pro-image-preview";
 const SINGLE_SENTENCE_PROMPT =
   "Take the person from photo 1 and put on the exact outfit from photo 2, keeping the identity and pose unchanged.";
+const ALLOWED_SIZES = new Set(["1:1", "2:3", "3:2"]);
+
+const normalizeStatus = (status?: string | null) => {
+  const value = status?.toLowerCase();
+  if (!value) return "submitted";
+  if (["completed", "succeeded", "success", "done"].includes(value)) return "completed";
+  if (["failed", "error", "canceled", "cancelled"].includes(value)) return "failed";
+  return value;
+};
+
+const normalizeSize = (size: string) => (ALLOWED_SIZES.has(size) ? size : "2:3");
 
 export async function POST(request: Request) {
   try {
@@ -26,12 +39,13 @@ export async function POST(request: Request) {
     const payload: Record<string, unknown> = {
       model: MODEL_NAME,
       prompt,
-      size,
-      nsfw_check: false,
+      size: normalizeSize(size),
+      n: 1,
       image_urls: [modelUrl, garmentUrl],
+      nsfw_check: false,
     };
 
-    const response = await fetch(`${EVOLINK_API_BASE}/v1/images/generations`, {
+    const response = await fetch(`${EVOLINK_BASE_URL}/v1/images/generations`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -42,22 +56,26 @@ export async function POST(request: Request) {
 
     const data = await response.json();
 
-    if (!response.ok) {
+    const isErrorCode = typeof data?.code === "number" && data.code !== 200;
+
+    if (!response.ok || isErrorCode) {
       console.error("Failed to start try-on render:", data);
       return NextResponse.json(
         {
-          error: data.error?.message || "Failed to start try-on task",
+          error: data.error?.message || data?.message || "Failed to start try-on task",
           details: data,
         },
-        { status: response.status },
+        { status: response.ok ? 400 : response.status },
       );
     }
 
+    const bodyData = Array.isArray(data?.data) ? data.data[0] : data?.data ?? data;
+
     return NextResponse.json({
-      taskId: data.id,
-      status: data.status,
-      progress: data.progress ?? 0,
-      estimatedTime: data.task_info?.estimated_time ?? null,
+      taskId: bodyData?.task_id ?? bodyData?.id ?? null,
+      status: normalizeStatus(bodyData?.status),
+      progress: bodyData?.progress ?? 0,
+      estimatedTime: bodyData?.estimated_time ?? null,
     });
   } catch (error) {
     console.error("Unexpected try-on error:", error);

@@ -4,6 +4,7 @@ import { createOssClient } from "@/lib/oss";
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB per Evolink requirements
 const ALLOWED_MIME = new Set(["image/jpeg", "image/jpg", "image/png", "image/webp"]);
+const SIGNED_URL_TTL_SECONDS = 60 * 60 * 24; // 24h
 
 export async function POST(request: Request) {
   try {
@@ -42,10 +43,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Failed to upload to OSS" }, { status: 500 });
     }
 
-    const publicUrl = result.url.startsWith("http") ? result.url : `https://${result.url}`;
+    const signedUrl = client.signatureUrl(objectKey, { expires: SIGNED_URL_TTL_SECONDS });
 
     return NextResponse.json({
-      url: publicUrl,
+      url: signedUrl,
       objectKey,
     });
   } catch (error) {

@@ -1262,9 +1262,10 @@ export const en: Locale = {
       statusTitle: "Async task status",
       statusDescription: "Submit, then poll. Links stay live for 24h.",
       resultTitle: "Output preview",
-      resultDescription: "The first returned URL is shown here.",
+      resultDescription: "A gallery of completed results, including prompts and reference comparisons.",
       errorState: "Generation failed. Tweak the prompt or try again.",
       generateCta: "Generate with Nano Banana 2",
+      generateCtaTemplate: "Generate with {model}",
       generating: "Submitting…",
       resetCta: "Reset",
       downloadCta: "Download",
@@ -1277,20 +1278,9 @@ export const en: Locale = {
       scenariosTitle: "Quick recipes",
       scenarios: [
         {
-          title: "Catalog studio (text-to-image)",
-          prompt: "Studio portrait of a female model wearing a cropped denim jacket and pleated midi skirt, soft daylight, neutral backdrop, 3:4.",
-        },
-        {
-          title: "Street lookbook",
-          prompt: "Streetwear male model in Tokyo alley at night, oversized bomber jacket with graphic tee, neon rim light, 3:4.",
-        },
-        {
-          title: "Packshot to hero (image-to-image)",
-          prompt: "Turn the reference packshot into an on-body hero image, keep fabric and logo exactly the same, minimal studio background.",
-        },
-        {
-          title: "Retouch & relight",
-          prompt: "Relight the reference portrait to warm sunset glow, keep the face and wardrobe identical, subtle film grain.",
+          title: "Xiaohongshu OOTD breakdown collage",
+          prompt:
+            "【Ultimate OOTD Breakdown & Fashion Magazine Collage Prompt (strict execution)】\n\nSYSTEM (must follow)\nYou are a professional fashion editor and visual designer specializing in OOTD collage magazines.\nYour job: Use the uploaded image as the ONLY reference for the left-side person.\nNever change the model’s face, body shape, hairstyle, pose, ethnicity, gender, or outfit silhouette.\nYou must generate a clean, high-end OOTD layout.\n\nPROMPT\nProfessional OOTD fashion collage, premium magazine editorial layout, 16:9 horizontal, clean split composition: Left 60% / Right 40%. Modern Xiaohongshu / Instagram blogger style.\n\nLEFT SIDE — STRICTLY based on the uploaded photo\nUse the person in the input image as-is. Keep:\n• same face\n• same hairstyle\n• same outfit\n• same pose\n• same proportions & body shape\n• same style & vibe\nRender style: high-end DSLR street photography, realistic, bright natural light, light bokeh, subtle city background. Feel like a magazine street snap.\nDo NOT redesign or change the outfit.\nDo NOT use a different model.\nDo NOT generate a cartoon / illustration.\n\nRIGHT SIDE — Product Breakdown Grid\nClean white background, editorial product grid.\nVertical modules = pick 5–6 items actually worn by the person in the uploaded photo (top, bottom, shoes, bag, accessories, etc.).\nEach module contains:\n1. Clean cut-out photo of the item\n2. Brand (English)\n3. Chinese item name\n4. Price (“¥xxx”)",
         },
       ],
       checklistTitle: "Run checklist",
@@ -1354,9 +1344,9 @@ export const en: Locale = {
     },
     generator: {
       title: "Describe the look. LoomAI renders the model.",
-      subtitle: "Create editorial-ready on-model shots for apparel drops in seconds. Default: Z Image Turbo for fastest text-to-image. Upload references and we auto-switch to Nano Banana 2 (Gemini 3) for fusion.",
+      subtitle: "Create editorial-ready on-model shots for apparel drops in seconds. Default: Z Image Turbo for fastest text-to-image. Upload references and we auto-switch to Gemini 2.5 Flash Image Preview for fusion.",
       badges: {
-        model: "Default: Z Image Turbo · References: Nano Banana 2",
+        model: "Default: Z Image Turbo · References: Gemini 2.5",
         turnaround: "<30s average turnaround",
         usage: "Links stay live for 24h"
       },

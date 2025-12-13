@@ -2,7 +2,9 @@ import { NextResponse } from "next/server";
 import { Buffer } from "node:buffer";
 import { z } from "zod";
 
-const EVOLINK_API_BASE = "https://api.evolink.ai";
+const normalizeBaseUrl = (baseUrl: string) => baseUrl.replace(/\/v1\/?$/, "");
+
+const EVOLINK_BASE_URL = normalizeBaseUrl(process.env.EVOLINK_BASE_URL || "https://api.evolink.ai");
 const MODEL_TEXT_IMAGE = "z-image-turbo";
 const MODEL_FUSION = "nano-banana-2-lite";
 const SIZE_OPTIONS = [
@@ -19,7 +21,7 @@ const SIZE_OPTIONS = [
   "21:9",
 ] as const;
 const MAX_REFERENCE_IMAGES = 5;
-const MAX_REFERENCE_BYTES = 10 * 1024 * 1024; // 10 MB per image as per Evolink docs
+const MAX_REFERENCE_BYTES = 10 * 1024 * 1024; // 10 MB per image
 const SUPPORTED_REFERENCE_MIME = new Set(["image/jpeg", "image/jpg", "image/png", "image/webp"]);
 const DEFAULT_FUSION_DIRECTIVE =
   "Take the person from the model reference (Photo 1) and dress them in the exact garment from the garment reference (Photo 2) with no other alterations. Preserve faces, poses, proportions, and camera framing exactly while copying the garment fabric, colors, prints, trims, and construction one-to-one.";
@@ -65,19 +67,20 @@ const extractBase64Payload = (dataUrl: string) => {
   };
 };
 
+const normalizeStatus = (status?: string | null) => {
+  const value = status?.toLowerCase();
+  if (!value) return "submitted";
+  if (["completed", "succeeded", "success", "done"].includes(value)) return "completed";
+  if (["failed", "error", "canceled", "cancelled"].includes(value)) return "failed";
+  return value;
+};
+
+const normalizeSize = (size: string) => {
+  return SIZE_OPTIONS.includes(size as (typeof SIZE_OPTIONS)[number]) ? size : "2:3";
+};
+
 export async function POST(request: Request) {
   try {
-    const apiKey = process.env.EVOLINK_API_KEY;
-
-    if (!apiKey) {
-      return NextResponse.json(
-        {
-          error: "Missing Evolink API key",
-        },
-        { status: 500 },
-      );
-    }
-
     const json = await request.json();
     const parsed = requestSchema.safeParse(json);
 
@@ -93,6 +96,17 @@ export async function POST(request: Request) {
 
     const hasReferences = Boolean(parsed.data.references?.length);
     const model = hasReferences ? MODEL_FUSION : MODEL_TEXT_IMAGE;
+    const baseUrl = EVOLINK_BASE_URL;
+    const apiKey = process.env.EVOLINK_API_KEY;
+
+    if (!apiKey) {
+      return NextResponse.json(
+        {
+          error: "Missing Evolink API key",
+        },
+        { status: 500 },
+      );
+    }
 
     const payload: Record<string, unknown> = {
       model,
@@ -102,8 +116,8 @@ export async function POST(request: Request) {
           : hasReferences
             ? DEFAULT_FUSION_DIRECTIVE
             : parsed.data.prompt,
-      size: parsed.data.size,
-      nsfw_check: false,
+      size: normalizeSize(parsed.data.size),
+      n: 1,
     };
 
     if (parsed.data.seed) {
@@ -143,7 +157,9 @@ export async function POST(request: Request) {
       payload.image_urls = sanitizedReferences;
     }
 
-    const response = await fetch(`${EVOLINK_API_BASE}/v1/images/generations`, {
+    payload.nsfw_check = false;
+
+    const response = await fetch(`${baseUrl}/v1/images/generations`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -154,22 +170,26 @@ export async function POST(request: Request) {
 
     const data = await response.json();
 
-    if (!response.ok) {
+    const isErrorCode = typeof data?.code === "number" && data.code !== 200;
+
+    if (!response.ok || isErrorCode) {
       console.error("Failed to create image generation task:", data);
       return NextResponse.json(
         {
-          error: data.error?.message || "Failed to create image generation task",
+          error: data.error?.message || data?.message || "Failed to create image generation task",
           details: data,
         },
-        { status: response.status },
+        { status: response.ok ? 400 : response.status },
       );
     }
 
+    const body = Array.isArray(data?.data) ? data.data[0] : data?.data ?? data;
+
     return NextResponse.json({
-      taskId: data.id,
-      status: data.status,
-      progress: data.progress ?? 0,
-      estimatedTime: data.task_info?.estimated_time ?? null,
+      taskId: body?.task_id ?? body?.id ?? null,
+      status: normalizeStatus(body?.status),
+      progress: body?.progress ?? 0,
+      estimatedTime: body?.estimated_time ?? null,
     });
   } catch (error) {
     console.error("Unexpected image generation error:", error);
