@@ -26,6 +26,9 @@ out
 # OS
 .DS_Store
 Thumbs.db
+._*
+.AppleDouble
+__MACOSX
 
 # Git
 .git
