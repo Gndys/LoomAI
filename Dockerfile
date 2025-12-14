@@ -11,10 +11,12 @@ COPY libs ./libs
 COPY scripts ./scripts
 COPY config.ts tsconfig.json vitest.config.ts drizzle.config.ts ./
 
+ENV BUILD_TIME=true
 RUN pnpm install --frozen-lockfile
 
 RUN pnpm build
 
+ENV BUILD_TIME=false
 ENV NODE_ENV=production
 EXPOSE 7001
 
