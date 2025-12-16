@@ -1,5 +1,4 @@
 import { headers } from 'next/headers'
-import { auth } from "@libs/auth";
 import { userRoles } from "@libs/database/constants";
 import { db } from "@libs/database";
 import { user } from "@libs/database/schema/user";
@@ -10,6 +9,7 @@ import dynamic from 'next/dynamic';
 import { translations } from "@libs/i18n";
 import { DollarSign, Users, ShoppingBag, Loader2, TrendingUp, TrendingDown, Wallet } from "lucide-react";
 import { AdminOrdersCard } from "./components/admin-orders-card";
+import { safeGetSession } from '@/lib/safe-get-session';
 
 // 定义图表数据类型
 interface ChartData {
@@ -280,12 +280,12 @@ export default async function AdminDashboard({ params }: { params: Promise<{ lan
   const { lang } = await params;
   const t = translations[lang as keyof typeof translations];
 
-  const session = await auth.api.getSession({
+  const session = await safeGetSession({
     headers: await headers()
   });
 
   // 权限检查
-  if (!session || session.user.role !== userRoles.ADMIN) {
+  if (!session || !session.user || session.user.role !== userRoles.ADMIN) {
     return (
       <div className="p-8">
         <div className="text-center">

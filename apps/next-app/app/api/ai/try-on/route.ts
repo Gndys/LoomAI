@@ -3,6 +3,15 @@ import { NextResponse } from "next/server";
 const normalizeBaseUrl = (baseUrl: string) => baseUrl.replace(/\/v1\/?$/, "");
 
 const EVOLINK_BASE_URL = normalizeBaseUrl(process.env.EVOLINK_BASE_URL || "https://api.evolink.ai");
+const resolveProxyUrl = () =>
+  process.env.EVOLINK_PROXY_URL ||
+  process.env.ALL_PROXY ||
+  process.env.all_proxy ||
+  process.env.HTTPS_PROXY ||
+  process.env.https_proxy ||
+  process.env.HTTP_PROXY ||
+  process.env.http_proxy ||
+  undefined;
 const MODEL_NAME = "gemini-3-pro-image-preview";
 const SINGLE_SENTENCE_PROMPT =
   "Take the person from photo 1 and put on the exact outfit from photo 2, keeping the identity and pose unchanged.";
@@ -45,13 +54,26 @@ export async function POST(request: Request) {
       nsfw_check: false,
     };
 
-    const response = await fetch(`${EVOLINK_BASE_URL}/v1/images/generations`, {
+    const proxyUrl = resolveProxyUrl();
+    const fetchImpl = (await import("node-fetch")).default as unknown as typeof fetch;
+    let agent: unknown | undefined;
+    if (proxyUrl) {
+      const proxyAgentModule: any = await import("proxy-agent");
+      const ProxyAgentCtor = proxyAgentModule?.ProxyAgent || proxyAgentModule?.default?.ProxyAgent;
+      if (!ProxyAgentCtor) {
+        return NextResponse.json({ error: "Proxy support unavailable (proxy-agent not found)" }, { status: 500 });
+      }
+      agent = new ProxyAgentCtor(proxyUrl);
+    }
+
+    const response = await fetchImpl(`${EVOLINK_BASE_URL}/v1/images/generations`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify(payload),
+      ...(agent ? ({ agent } as any) : null),
     });
 
     const data = await response.json();

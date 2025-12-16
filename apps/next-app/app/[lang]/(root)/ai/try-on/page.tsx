@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { Sparkles, UploadCloud, Repeat, AlertTriangle, Clock, Image as ImageIcon, Download } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { addAiGenerationHistoryItem } from "@/lib/ai-history";
 
 type GenerationStatus = "idle" | "creating" | "polling" | "completed" | "failed";
 
@@ -24,7 +25,7 @@ interface TryOnHistoryItem {
 }
 
 export default function VirtualTryOnPage() {
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
   const [modelFile, setModelFile] = useState<File | null>(null);
   const [garmentFile, setGarmentFile] = useState<File | null>(null);
   const [modelPreview, setModelPreview] = useState<string | null>(null);
@@ -159,7 +160,13 @@ export default function VirtualTryOnPage() {
         method: "POST",
         body: fd,
       });
-      const data = await res.json();
+      if (res.status === 401) {
+        toast.error(locale === "en" ? "Please sign in to use this feature." : "请先登录后使用该功能。");
+        const returnTo = encodeURIComponent(window.location.pathname + window.location.search);
+        window.location.href = `/${locale}/signin?returnTo=${returnTo}`;
+        throw new Error("Unauthorized");
+      }
+      const data = await res.json().catch(() => ({} as any));
       if (!res.ok) {
         throw new Error(data.error || `${label} upload failed`);
       }
@@ -191,7 +198,13 @@ export default function VirtualTryOnPage() {
           size: "3:4",
         }),
       });
-      const data = await response.json();
+      if (response.status === 401) {
+        toast.error(locale === "en" ? "Please sign in to use this feature." : "请先登录后使用该功能。");
+        const returnTo = encodeURIComponent(window.location.pathname + window.location.search);
+        window.location.href = `/${locale}/signin?returnTo=${returnTo}`;
+        return;
+      }
+      const data = await response.json().catch(() => ({} as any));
       if (!response.ok) {
         throw new Error(data.error || t.ai.tryOn.toasts.error);
       }
@@ -233,6 +246,14 @@ export default function VirtualTryOnPage() {
           setTaskId(null);
           setImageUrl(data.imageUrl);
           toast.success(t.ai.tryOn.toasts.completed);
+          addAiGenerationHistoryItem({
+            id: completedTaskId,
+            tool: "try-on",
+            imageUrl: data.imageUrl,
+            prompt: t.ai.tryOn.simplePrompt || "Take the person from photo 1 and put on the exact outfit from photo 2.",
+            model: "gemini-3-pro-image-preview",
+            createdAt: new Date().toISOString(),
+          });
           setHistory((prev) => [
             {
               id: completedTaskId,

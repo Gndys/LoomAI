@@ -43,9 +43,14 @@ export default function Header({ className }: HeaderProps) {
     { href: `/${currentLocale}/ai`, label: t.header.navigation.ai },
     { href: `/${currentLocale}/ai/fabric-design`, label: t.header.navigation.fabric },
     { href: `/${currentLocale}/ai/try-on`, label: t.header.navigation.tryOn },
-    { href: `/${currentLocale}/ai/nano-banana`, label: t.header.navigation.nano },
     { href: `/${currentLocale}/ai/prompt-extractor`, label: t.header.navigation.promptExtractor },
+    { href: `/${currentLocale}/ai/nano-banana`, label: t.header.navigation.nano },
+    { href: `/${currentLocale}/cases`, label: t.header.navigation.cases },
   ];
+  const productDesignLinkHrefs = new Set([`/${currentLocale}/ai/prompt-extractor`]);
+  const productDesignLinks = featureLinks.filter((link) =>
+    productDesignLinkHrefs.has(link.href)
+  );
 
   useEffect(() => {
     setHasHydrated(true);
@@ -108,11 +113,37 @@ export default function Header({ className }: HeaderProps) {
             <div className="hidden md:block h-9 w-[120px] rounded-md bg-muted animate-pulse" aria-hidden="true" />
           )}
           <nav className="hidden md:flex md:items-center md:space-x-6">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  className="inline-flex items-center text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  {t.header.navigation.productDesign}
+                  <ChevronDown className="ml-2 h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="w-56">
+                {productDesignLinks.map((link) => (
+                  <DropdownMenuItem key={link.href} asChild>
+                    <Link href={link.href} className="flex items-center text-sm text-foreground">
+                      {link.label}
+                    </Link>
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
             <Link
               href={`/${currentLocale}/premium-features`}
               className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
             >
               {t.header.navigation.premiumFeatures}
+            </Link>
+            <Link
+              href={`/${currentLocale}/cases`}
+              className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+            >
+              {t.header.navigation.cases}
             </Link>
             <Link
               href={`/${currentLocale}/pricing`}
@@ -195,6 +226,15 @@ export default function Header({ className }: HeaderProps) {
                           <circle cx="12" cy="12" r="3"></circle>
                         </svg>
                         {t.header.userMenu.personalSettings}
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link href={`/${currentLocale}/ai/history`} className="flex items-center">
+                        <svg className="mr-2 h-4 w-4 text-muted-foreground" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <circle cx="12" cy="12" r="10"></circle>
+                          <polyline points="12 6 12 12 16 14"></polyline>
+                        </svg>
+                        {t.header.userMenu.generationHistory}
                       </Link>
                     </DropdownMenuItem>
                     {user.role === 'admin' && (
@@ -283,6 +323,27 @@ export default function Header({ className }: HeaderProps) {
                 ))}
               </DropdownMenuContent>
             </DropdownMenu>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" className="w-full justify-between">
+                  <span className="text-base font-medium text-foreground">{t.header.navigation.productDesign}</span>
+                  <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="w-full">
+                {productDesignLinks.map((link) => (
+                  <DropdownMenuItem key={link.href} asChild>
+                    <Link
+                      href={link.href}
+                      className="block w-full text-base"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      {link.label}
+                    </Link>
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
             <div className="grid grid-cols-2 gap-2">
               <Link
                 href={`/${currentLocale}/premium-features`}
@@ -290,6 +351,13 @@ export default function Header({ className }: HeaderProps) {
                 onClick={() => setIsMenuOpen(false)}
               >
                 {t.header.navigation.premiumFeatures}
+              </Link>
+              <Link
+                href={`/${currentLocale}/cases`}
+                className="block px-3 py-2 rounded-md text-base font-medium text-foreground hover:text-foreground hover:bg-muted text-center"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                {t.header.navigation.cases}
               </Link>
               <Link
                 href={`/${currentLocale}/pricing`}
@@ -364,6 +432,9 @@ export default function Header({ className }: HeaderProps) {
                 </div>
                 <Link href={`/${currentLocale}/settings`} className="block px-3 py-2 rounded-md text-base font-medium text-foreground hover:text-foreground hover:bg-muted">
                   {t.header.userMenu.personalSettings}
+                </Link>
+                <Link href={`/${currentLocale}/ai/history`} className="block px-3 py-2 rounded-md text-base font-medium text-foreground hover:text-foreground hover:bg-muted">
+                  {t.header.userMenu.generationHistory}
                 </Link>
                 {user.role === 'admin' && (
                   <Link href={`/${currentLocale}/admin`} className="block px-3 py-2 rounded-md text-base font-medium text-foreground hover:text-foreground hover:bg-muted">

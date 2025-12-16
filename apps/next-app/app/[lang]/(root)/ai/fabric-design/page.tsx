@@ -25,6 +25,7 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
+import { addAiGenerationHistoryItem } from "@/lib/ai-history";
 
 type GenerationStatus = "idle" | "creating" | "polling" | "completed" | "failed";
 const FABRIC_KEYS = ["silk", "denim", "knit", "custom"] as const;
@@ -53,7 +54,7 @@ interface GalleryItem {
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
 
 export default function FabricDesignPage() {
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
   const [referenceFile, setReferenceFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -281,7 +282,14 @@ export default function FabricDesignPage() {
           body: formData,
         });
 
-        const data = await response.json();
+        if (response.status === 401) {
+          toast.error(locale === "en" ? "Please sign in to use this feature." : "请先登录后使用该功能。");
+          const returnTo = encodeURIComponent(window.location.pathname + window.location.search);
+          window.location.href = `/${locale}/signin?returnTo=${returnTo}`;
+          return;
+        }
+
+        const data = await response.json().catch(() => ({} as any));
 
         if (!response.ok) {
           throw new Error(data.error || t.ai.fabricDesigner.toasts.error);
@@ -333,6 +341,17 @@ export default function FabricDesignPage() {
           setStatus("completed");
           setTaskId(null);
           toast.success(t.ai.fabricDesigner.toasts.completed);
+
+          if (jobSnapshot) {
+            addAiGenerationHistoryItem({
+              id: completedTaskId,
+              tool: "fabric-design",
+              imageUrl: data.imageUrl,
+              prompt: [jobSnapshot.patternPrompt, jobSnapshot.advancedPrompt].filter(Boolean).join("\n"),
+              model: "gemini-3-pro-image-preview",
+              createdAt: new Date().toISOString(),
+            });
+          }
 
           if (jobSnapshot) {
             setGallery((prev) => [

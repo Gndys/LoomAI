@@ -24,6 +24,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
+import { addAiGenerationHistoryItem } from "@/lib/ai-history";
 
 const ASPECT_RATIOS = ["auto", "1:1", "2:3", "3:2", "3:4", "4:3", "4:5", "5:4", "9:16", "16:9", "21:9"] as const;
 const MAX_REFERENCE_IMAGES = 5;
@@ -55,7 +56,7 @@ function encodeFileToDataUrl(file: File) {
 }
 
 export default function LookbookGeneratorPage() {
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
   const [prompt, setPrompt] = useState("");
   const [size, setSize] = useState<AspectRatio>("3:4");
   const [frameAspectRatio, setFrameAspectRatio] = useState<number | undefined>(parseAspectRatio("3:4"));
@@ -72,6 +73,8 @@ export default function LookbookGeneratorPage() {
   const [referenceImages, setReferenceImages] = useState<Array<{ id: string; file: File; preview: string }>>([]);
   const referenceInputRef = useRef<HTMLInputElement | null>(null);
   const referenceStoreRef = useRef(referenceImages);
+  const [renderCreatedAt, setRenderCreatedAt] = useState<string | null>(null);
+  const [renderModel, setRenderModel] = useState<string | null>(null);
 
   const statusLabels = useMemo(
     () => ({
@@ -129,6 +132,16 @@ export default function LookbookGeneratorPage() {
         setProgress(data.progress ?? 0);
 
         if (data.status === "completed" && data.imageUrl) {
+          if (taskId && lastPrompt) {
+            addAiGenerationHistoryItem({
+              id: taskId,
+              tool: "lookbook",
+              imageUrl: data.imageUrl,
+              prompt: lastPrompt,
+              model: renderModel ?? "z-image-turbo",
+              createdAt: renderCreatedAt ?? new Date().toISOString(),
+            });
+          }
           setImageUrl(data.imageUrl);
           setStatus("completed");
           setTaskId(null);
@@ -178,6 +191,8 @@ export default function LookbookGeneratorPage() {
       setImageUrl(null);
       setErrorMessage(null);
       setLastPrompt(finalPrompt);
+      setRenderCreatedAt(new Date().toISOString());
+      setRenderModel(referenceImages.length ? "nano-banana-2-lite" : "z-image-turbo");
       setElapsedSeconds(0);
       setEstimatedTime(null);
       setFrameAspectRatio(parseAspectRatio(size));
@@ -213,7 +228,14 @@ export default function LookbookGeneratorPage() {
           }),
         });
 
-        const data = await response.json();
+        if (response.status === 401) {
+          toast.error(locale === "en" ? "Please sign in to use this feature." : "请先登录后使用该功能。");
+          const returnTo = encodeURIComponent(window.location.pathname + window.location.search);
+          window.location.href = `/${locale}/signin?returnTo=${returnTo}`;
+          return;
+        }
+
+        const data = await response.json().catch(() => ({} as any));
 
         if (!response.ok) {
           throw new Error(data.error || t.ai.generator.toasts.error);

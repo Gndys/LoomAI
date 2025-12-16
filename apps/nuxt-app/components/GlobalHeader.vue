@@ -30,6 +30,25 @@
           </DropdownMenuContent>
         </DropdownMenu>
         <nav class="hidden md:flex md:items-center md:space-x-6">
+          <DropdownMenu>
+            <DropdownMenuTrigger as-child>
+              <Button variant="ghost" class="inline-flex items-center text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
+                {{ t('header.navigation.productDesign') }}
+                <ChevronDown class="ml-2 h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" class="w-56">
+              <DropdownMenuItem
+                v-for="item in productDesignLinks"
+                :key="item.to"
+                as-child
+              >
+                <NuxtLink :to="item.to" class="flex items-center text-sm text-foreground">
+                  {{ item.label }}
+                </NuxtLink>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
           <NuxtLink 
             :to="localePath('/premium-features')" 
             class="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
@@ -112,6 +131,15 @@
                       {{ t('header.userMenu.personalSettings') }}
                     </NuxtLink>
                   </DropdownMenuItem>
+                  <DropdownMenuItem as-child>
+                    <NuxtLink :to="localePath('/ai/history')" class="flex items-center">
+                      <svg class="mr-2 h-4 w-4 text-muted-foreground" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <polyline points="12 6 12 12 16 14"></polyline>
+                      </svg>
+                      {{ t('header.userMenu.generationHistory') }}
+                    </NuxtLink>
+                  </DropdownMenuItem>
                   <DropdownMenuItem v-if="user.role === 'admin'" as-child>
                     <NuxtLink :to="localePath('/admin')" class="flex items-center">
                       <svg class="mr-2 h-4 w-4 text-muted-foreground" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -181,6 +209,29 @@
           <DropdownMenuContent align="start" class="w-full">
             <DropdownMenuItem
               v-for="item in featureLinks"
+              :key="item.to"
+              as-child
+            >
+              <NuxtLink
+                :to="item.to"
+                class="block w-full text-base"
+                @click="isMenuOpen = false"
+              >
+                {{ item.label }}
+              </NuxtLink>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+        <DropdownMenu>
+          <DropdownMenuTrigger as-child>
+            <Button variant="outline" class="w-full justify-between">
+              <span class="text-base font-medium text-foreground">{{ t('header.navigation.productDesign') }}</span>
+              <ChevronDown class="h-4 w-4 text-muted-foreground" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" class="w-full">
+            <DropdownMenuItem
+              v-for="item in productDesignLinks"
               :key="item.to"
               as-child
             >
@@ -267,6 +318,13 @@
             {{ t('header.userMenu.personalSettings') }}
           </NuxtLink>
           <NuxtLink 
+            :to="localePath('/ai/history')" 
+            class="block px-3 py-2 rounded-md text-base font-medium text-foreground hover:text-foreground hover:bg-muted"
+            @click="isMenuOpen = false"
+          >
+            {{ t('header.userMenu.generationHistory') }}
+          </NuxtLink>
+          <NuxtLink 
             v-if="user.role === 'admin'" 
             :to="localePath('/admin')" 
             class="block px-3 py-2 rounded-md text-base font-medium text-foreground hover:text-foreground hover:bg-muted"
@@ -312,6 +370,10 @@ const featureLinks = computed(() => [
   { to: localePath('/ai'), label: t('header.navigation.ai') },
   { to: localePath('/ai/nano-banana'), label: t('header.navigation.nano') },
 ])
+
+const productDesignLinks = computed(() =>
+  featureLinks.value.filter(link => link.to.includes('/ai/nano-banana'))
+)
 
 // Authentication
 const { user, signOut } = useAuth()

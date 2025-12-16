@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { auth } from "@libs/auth";
 import { i18n } from '../app/i18n-config';
 
 // Import necessary items from your permissions library
 import { can, Action, Subject, AppUser, Role } from "@libs/permissions"; 
 import { hasValidSubscription } from "./subscriptionMiddleware";
+import { safeGetSession } from '@/lib/safe-get-session';
 
 // Define the structure for protected route configuration
 interface ProtectedRouteConfig {
@@ -74,11 +74,6 @@ const protectedRoutes: ProtectedRouteConfig[] = [
     type: 'page',
     requiresAuth: true
   },
-  // {
-  //   pattern: new RegExp(`^\\/(${i18n.locales.join('|')})\\/ai(\\/.*)?$`), 
-  //   type: 'page',
-  //   requiresAuth: true
-  // },
   {
     pattern: new RegExp(`^\\/(${i18n.locales.join('|')})\\/dashboard(\\/.*)?$`), 
     type: 'page',
@@ -110,6 +105,7 @@ const protectedRoutes: ProtectedRouteConfig[] = [
     type: 'page',
     requiresAuth: true
   },
+
   {
     pattern: new RegExp('^/api/users(\\/.*)?$'),
     type: 'api',
@@ -160,6 +156,16 @@ const protectedRoutes: ProtectedRouteConfig[] = [
     requiresAuth: true
   },
   {
+    pattern: new RegExp('^/api/uploads(\\/.*)?$'),
+    type: 'api',
+    requiresAuth: true
+  },
+  {
+    pattern: new RegExp('^/api/ai(\\/.*)?$'),
+    type: 'api',
+    requiresAuth: true
+  },
+  {
     pattern: new RegExp('^/api/chat(\\/.*)?$'), 
     type: 'api',
     requiresAuth: true,
@@ -191,7 +197,7 @@ export async function authMiddleware(request: NextRequest): Promise<NextResponse
     console.log(`🔐 Auth route detected: ${pathname}`);
     
     const requestHeaders = new Headers(request.headers);
-    const session = await auth.api.getSession({
+    const session = await safeGetSession({
         headers: requestHeaders
     });
 
@@ -208,7 +214,7 @@ export async function authMiddleware(request: NextRequest): Promise<NextResponse
 
   console.log(`Protected route accessed: ${pathname}, Type: ${matchedRoute.type}`);
   const requestHeaders = new Headers(request.headers);
-  const session = await auth.api.getSession({
+  const session = await safeGetSession({
       headers: requestHeaders
   });
 

@@ -8,6 +8,7 @@
   },
   "packageManager": "pnpm@9.4.0",
   "scripts": {
+    "notify": "node scripts/run-and-notify.mjs --",
     "build": "pnpm turbo run build --filter=@tinyship/next-app",
     "dev:next": "turbo run dev --filter=@tinyship/next-app",
     "dev:nuxt": "turbo run dev --filter=@tinyship/nuxt-app",

@@ -1781,13 +1781,16 @@ export const en: Locale = {
   },
   header: {
     navigation: {
-      menu: "Features",
+      menu: "Fashion Design",
+      productDesign: "Product Design",
       ai: "AI Model Studio",
       fabric: "Fabric Designer",
       tryOn: "Virtual Try-On",
       nano: "Nano",
       promptExtractor: "Prompt Extractor",
+      history: "History",
       premiumFeatures: "Premium Features",
+      cases: "Case Gallery",
       pricing: "Pricing"
     },
     auth: {
@@ -1800,6 +1803,7 @@ export const en: Locale = {
       profile: "Profile",
       settings: "Settings",
       personalSettings: "Personal Settings",
+      generationHistory: "Generation History",
       adminPanel: "Admin Panel"
     },
     language: {
@@ -1811,5 +1815,11 @@ export const en: Locale = {
       themeSettings: "Theme Settings",
       languageSelection: "Language Selection"
     }
+  },
+  cases: {
+    title: "Case Gallery",
+    description: "A small collection of image examples with reusable prompts. Replace the images and prompts with your own cases anytime.",
+    copyPrompt: "Copy Prompt",
+    copied: "Prompt copied",
   }
 } as const; 

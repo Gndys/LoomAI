@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { auth } from "@libs/auth";
 import { i18n } from '../app/i18n-config';
 import { checkSubscriptionStatus, isLifetimeMember } from '@libs/database/utils/subscription';
+import { safeGetSession } from '@/lib/safe-get-session';
 
 /**
  * 检查用户是否具有有效订阅
@@ -38,7 +38,7 @@ export async function subscriptionMiddleware(
   const requestHeaders = new Headers(request.headers);
   
   // 获取当前用户会话
-  const session = await auth.api.getSession({
+  const session = await safeGetSession({
     headers: requestHeaders
   });
   

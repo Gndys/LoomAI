@@ -1,20 +1,23 @@
 import { NextResponse } from 'next/server';
-import { auth } from '@libs/auth';
 import { db } from '@libs/database';
 import { subscription } from '@libs/database/schema/subscription';
 import { eq, desc } from 'drizzle-orm';
 import { createPaymentProvider, StripeProvider, CreemProvider } from '@libs/payment';
 import { config } from '@config';
+import { safeGetSession } from '@/lib/safe-get-session';
 
 export async function POST(request: Request) {
   try {
     // 获取用户会话信息 (authMiddleware已验证用户已登录)
     const requestHeaders = new Headers(request.headers);
-    const session = await auth.api.getSession({
+    const session = await safeGetSession({
         headers: requestHeaders
     });
+    if (!session || !session.user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
 
-    const userId = session!.user!.id;
+    const userId = session.user.id;
 
     // 获取请求体
     const body = await request.json().catch(() => ({}));

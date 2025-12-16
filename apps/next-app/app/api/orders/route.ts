@@ -1,16 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from "@libs/auth";
-import { headers } from 'next/headers';
 import { db } from '@libs/database';
 import { order } from '@libs/database/schema/order';
 import { eq, desc } from 'drizzle-orm';
+import { safeGetSession } from '@/lib/safe-get-session';
+import { headers } from 'next/headers';
 
 export async function GET(request: NextRequest) {
   try {
     // 获取当前用户会话 (authMiddleware已验证用户已登录)
-    const session = await auth.api.getSession({
+    const session = await safeGetSession({
       headers: await headers()
     });
+    if (!session || !session.user) {
+      return new NextResponse('Unauthorized', { status: 401 });
+    }
 
     // 获取用户的所有订单，按创建时间降序排列
     const userOrders = await db.select({
@@ -25,7 +28,7 @@ export async function GET(request: NextRequest) {
       createdAt: order.createdAt,
       updatedAt: order.updatedAt,
     }).from(order)
-      .where(eq(order.userId, session!.user!.id))
+      .where(eq(order.userId, session.user.id))
       .orderBy(desc(order.createdAt));
 
     return NextResponse.json({

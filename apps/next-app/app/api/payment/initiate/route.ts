@@ -1,10 +1,10 @@
-import { auth } from "@libs/auth";
 import { createPaymentProvider } from "@libs/payment";
 import { nanoid } from "nanoid";
 import { db } from "@libs/database";
 import { order, orderStatus, paymentProviders } from "@libs/database/schema/order";
 import { config } from "@config";
 import { eq } from "drizzle-orm";
+import { safeGetSession } from '@/lib/safe-get-session';
 
 // Order expiration time (2 hours)
 const ORDER_EXPIRATION_TIME = 2 * 60 * 60 * 1000;
@@ -13,9 +13,12 @@ export async function POST(req: Request) {
   try {
     // 1. Get user session (authMiddleware已验证用户已登录)
     const requestHeaders = new Headers(req.headers);
-    const session = await auth.api.getSession({
+    const session = await safeGetSession({
       headers: requestHeaders
     });
+    if (!session || !session.user) {
+      return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    }
 
     // 2. Get request parameters
     const { planId, provider = paymentProviders.STRIPE } = await req.json();
@@ -32,7 +35,7 @@ export async function POST(req: Request) {
 
     await db.insert(order).values({
       id: orderId,
-      userId: session!.user!.id,
+      userId: session.user.id,
       planId,
       amount: plan.amount.toString(), // Convert to string for numeric field
       currency: plan.currency,
@@ -87,7 +90,7 @@ export async function POST(req: Request) {
     
     const result = await paymentProvider.createPayment({
       orderId,
-      userId: session!.user!.id,
+      userId: session.user.id,
       planId,
       amount: plan.amount,
       currency: plan.currency,

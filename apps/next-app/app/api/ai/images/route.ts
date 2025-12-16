@@ -5,6 +5,15 @@ import { z } from "zod";
 const normalizeBaseUrl = (baseUrl: string) => baseUrl.replace(/\/v1\/?$/, "");
 
 const EVOLINK_BASE_URL = normalizeBaseUrl(process.env.EVOLINK_BASE_URL || "https://api.evolink.ai");
+const resolveProxyUrl = () =>
+  process.env.EVOLINK_PROXY_URL ||
+  process.env.ALL_PROXY ||
+  process.env.all_proxy ||
+  process.env.HTTPS_PROXY ||
+  process.env.https_proxy ||
+  process.env.HTTP_PROXY ||
+  process.env.http_proxy ||
+  undefined;
 const MODEL_TEXT_IMAGE = "z-image-turbo";
 const MODEL_FUSION = "nano-banana-2-lite";
 const SIZE_OPTIONS = [
@@ -159,14 +168,42 @@ export async function POST(request: Request) {
 
     payload.nsfw_check = false;
 
-    const response = await fetch(`${baseUrl}/v1/images/generations`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify(payload),
-    });
+    const proxyUrl = resolveProxyUrl();
+    const fetchImpl = (await import("node-fetch")).default as unknown as typeof fetch;
+    let agent: unknown | undefined;
+    if (proxyUrl) {
+      const proxyAgentModule: any = await import("proxy-agent");
+      const ProxyAgentCtor = proxyAgentModule?.ProxyAgent || proxyAgentModule?.default?.ProxyAgent;
+      if (!ProxyAgentCtor) {
+        return NextResponse.json({ error: "Proxy support unavailable (proxy-agent not found)" }, { status: 500 });
+      }
+      agent = new ProxyAgentCtor(proxyUrl);
+    }
+
+    let response: Response;
+    try {
+      response = await fetchImpl(`${baseUrl}/v1/images/generations`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify(payload),
+        ...(agent ? ({ agent } as any) : null),
+      });
+    } catch (error) {
+      const err = error as any;
+      const code = err?.cause?.code || err?.code || "FETCH_FAILED";
+      console.error("Evolink request failed:", { code, message: err?.message, cause: err?.cause });
+      return NextResponse.json(
+        {
+          error:
+            "Image provider request failed. If you use a proxy (Clash), set HTTPS_PROXY/HTTP_PROXY in env and restart dev server.",
+          details: { code, message: err?.message },
+        },
+        { status: 502 },
+      );
+    }
 
     const data = await response.json();
 

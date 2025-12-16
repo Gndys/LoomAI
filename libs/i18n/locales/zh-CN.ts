@@ -1783,13 +1783,16 @@ export const zhCN: Locale = {
   },
   header: {
     navigation: {
-      menu: "功能",
+      menu: "服装设计",
+      productDesign: "产品设计",
       ai: "AI 模特生成",
       fabric: "面料设计",
       tryOn: "虚拟试衣",
       nano: "Nano 实验室",
       promptExtractor: "图片提示词拆解",
+      history: "生成记录",
       premiumFeatures: "高级会员功能",
+      cases: "案例画廊",
       pricing: "定价"
     },
     auth: {
@@ -1802,6 +1805,7 @@ export const zhCN: Locale = {
       profile: "个人资料",
       settings: "设置",
       personalSettings: "个人设置",
+      generationHistory: "生成记录",
       adminPanel: "管理后台"
     },
     language: {
@@ -1813,5 +1817,11 @@ export const zhCN: Locale = {
       themeSettings: "主题设置",
       languageSelection: "语言选择"
     }
+  },
+  cases: {
+    title: "案例画廊",
+    description: "这里展示一些图片案例和可复用的提示词。你可以随时替换成自己的图片和提示词。",
+    copyPrompt: "复制提示词",
+    copied: "已复制提示词",
   }
 } as const; 

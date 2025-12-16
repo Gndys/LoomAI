@@ -1,18 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createPaymentProvider } from '@libs/payment';
-import { auth } from '@libs/auth';
 import { db } from '@libs/database';
 import { order } from '@libs/database/schema';
 import { eq } from 'drizzle-orm';
+import { safeGetSession } from '@/lib/safe-get-session';
 
 export async function GET(req: NextRequest) {
   try {
     // 获取当前用户会话 (authMiddleware已验证用户已登录)
-    const session = await auth.api.getSession({
+    const session = await safeGetSession({
       headers: new Headers(req.headers)
     });
+    if (!session || !session.user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
     
-    const userId = session!.user!.id;
+    const userId = session.user.id;
     
     const searchParams = req.nextUrl.searchParams;
     const orderId = searchParams.get('orderId');

@@ -5,6 +5,15 @@ import { z } from "zod";
 const normalizeBaseUrl = (baseUrl: string) => baseUrl.replace(/\/v1\/?$/, "");
 
 const EVOLINK_BASE_URL = normalizeBaseUrl(process.env.EVOLINK_BASE_URL || "https://api.evolink.ai");
+const resolveProxyUrl = () =>
+  process.env.EVOLINK_PROXY_URL ||
+  process.env.ALL_PROXY ||
+  process.env.all_proxy ||
+  process.env.HTTPS_PROXY ||
+  process.env.https_proxy ||
+  process.env.HTTP_PROXY ||
+  process.env.http_proxy ||
+  undefined;
 const MODEL_OPTIONS = ["z-image-turbo", "nano-banana-2-lite", "gemini-3-pro-image-preview"] as const;
 const SIZE_OPTIONS = ["auto", "1:1", "2:3", "3:2", "3:4", "4:3", "4:5", "5:4", "9:16", "16:9", "21:9"] as const;
 const QUALITY_OPTIONS = ["1K", "2K", "4K"] as const;
@@ -32,7 +41,13 @@ const getNetworkErrorCode = (error: unknown) => {
   return typeof code === "string" ? code : null;
 };
 
-const fetchWithRetry = async (url: string, init: RequestInit, retries: number) => {
+const fetchWithRetry = async (
+  fetchImpl: typeof fetch,
+  url: string,
+  init: RequestInit,
+  retries: number,
+  agent?: unknown,
+) => {
   const idempotencyKey = randomUUID();
   let attempt = 0;
   let lastError: unknown = null;
@@ -42,13 +57,14 @@ const fetchWithRetry = async (url: string, init: RequestInit, retries: number) =
     const timeout = setTimeout(() => controller.abort(), UPSTREAM_TIMEOUT_MS);
 
     try {
-      const response = await fetch(url, {
+      const response = await fetchImpl(url, {
         ...init,
         headers: {
           ...(init.headers ?? {}),
           "Idempotency-Key": idempotencyKey,
         },
         signal: controller.signal,
+        ...(agent ? ({ agent } as any) : null),
       });
       (response as any).__attempts = attempt + 1;
       return response;
@@ -148,7 +164,19 @@ export async function POST(request: Request) {
     let response: Response;
 
     try {
+      const proxyUrl = resolveProxyUrl();
+      const fetchImpl = (await import("node-fetch")).default as unknown as typeof fetch;
+      let agent: unknown | undefined;
+      if (proxyUrl) {
+        const proxyAgentModule: any = await import("proxy-agent");
+        const ProxyAgentCtor = proxyAgentModule?.ProxyAgent || proxyAgentModule?.default?.ProxyAgent;
+        if (!ProxyAgentCtor) {
+          return NextResponse.json({ error: "Proxy support unavailable (proxy-agent not found)" }, { status: 500 });
+        }
+        agent = new ProxyAgentCtor(proxyUrl);
+      }
       response = await fetchWithRetry(
+        fetchImpl,
         endpoint,
         {
           method: "POST",
@@ -159,19 +187,26 @@ export async function POST(request: Request) {
           body: JSON.stringify(payload),
         },
         UPSTREAM_RETRIES,
+        agent,
       );
     } catch (error) {
       console.error("Upstream fetch failed:", { vendor: "evolink", endpoint, model: upstreamModel, error });
       const isProd = process.env.NODE_ENV === "production";
       const cause = (error as any)?.cause;
       const attempts = (error as any)?.__attempts;
+      const rawMessage = error instanceof Error ? error.message : String(error);
+      const maybeTlsProxyIssue =
+        typeof rawMessage === "string" &&
+        (rawMessage.includes("ERR_SSL_TLSV1_ALERT_INTERNAL_ERROR") ||
+          rawMessage.includes("tlsv1 alert internal error") ||
+          rawMessage.includes("write EPROTO"));
       const details = isProd
         ? undefined
         : {
             vendor: "evolink",
             endpoint,
             model: upstreamModel,
-            message: error instanceof Error ? error.message : String(error),
+            message: rawMessage,
             attempts: typeof attempts === "number" ? attempts : undefined,
             cause:
               cause && typeof cause === "object"
@@ -189,7 +224,9 @@ export async function POST(request: Request) {
 
       return NextResponse.json(
         {
-          error: "Upstream fetch failed",
+          error: maybeTlsProxyIssue
+            ? "Upstream fetch failed (TLS/proxy). Check HTTP_PROXY/HTTPS_PROXY for Clash HTTP port (e.g. 7890), or set ALL_PROXY to socks5h://127.0.0.1:7897 and restart dev server."
+            : "Upstream fetch failed",
           ...(details ? { details } : {}),
         },
         { status: 502 },

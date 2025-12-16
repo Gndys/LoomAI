@@ -32,6 +32,7 @@ import {
   Copy,
   Eye,
 } from "lucide-react";
+import { addAiGenerationHistoryItem } from "@/lib/ai-history";
 
 const ASPECT_RATIOS = ["auto", "1:1", "2:3", "3:2", "3:4", "4:3", "4:5", "5:4", "9:16", "16:9", "21:9"] as const;
 const QUALITY_OPTIONS = ["1K", "2K", "4K"] as const;
@@ -42,6 +43,10 @@ const MAX_CONCURRENT_TASKS = 3;
 const MAX_PROMPT_CHARS = 2000;
 const PREVIEW_REFERENCE_LABEL = "参考";
 const PREVIEW_OUTPUT_LABEL = "输出";
+const STORAGE_VERSION = 1;
+const STORAGE_KEY = `nano-banana-tasks:v${STORAGE_VERSION}`;
+const MAX_STORED_TASKS = 100;
+const MAX_TASK_AGE_MS = 1000 * 60 * 60 * 24;
 
 type AspectRatio = (typeof ASPECT_RATIOS)[number];
 type Quality = (typeof QUALITY_OPTIONS)[number];
@@ -66,6 +71,87 @@ type GenerationTask = {
   taskId: string | null;
   imageUrl: string | null;
   errorMessage: string | null;
+  savedToHistory?: boolean;
+};
+
+type StoredTasksPayload = {
+  version: number;
+  tasks: GenerationTask[];
+};
+
+const ALLOWED_STATUSES: GenerationStatus[] = ["queued", "creating", "polling", "completed", "failed"];
+
+const clampProgress = (value: unknown) => {
+  if (typeof value !== "number" || Number.isNaN(value)) return 0;
+  return Math.min(100, Math.max(0, Math.floor(value)));
+};
+
+const normalizeStoredTask = (candidate: unknown): GenerationTask | null => {
+  if (!candidate || typeof candidate !== "object") return null;
+  const item = candidate as Partial<GenerationTask> & Record<string, unknown>;
+  if (typeof item.clientId !== "string" || typeof item.prompt !== "string") return null;
+
+  const model = MODEL_OPTIONS.includes(item.model as Model) ? (item.model as Model) : "z-image-turbo";
+  const size = ASPECT_RATIOS.includes(item.size as AspectRatio) ? (item.size as AspectRatio) : "auto";
+  const quality = QUALITY_OPTIONS.includes(item.quality as Quality) ? (item.quality as Quality) : "2K";
+  const createdAt = typeof item.createdAt === "number" ? item.createdAt : Date.now();
+  const estimatedTime = typeof item.estimatedTime === "number" ? item.estimatedTime : null;
+  const elapsedSeconds = typeof item.elapsedSeconds === "number" && item.elapsedSeconds >= 0 ? item.elapsedSeconds : 0;
+  const progress = clampProgress(item.progress);
+  const referenceUrls = Array.isArray(item.referenceUrls)
+    ? item.referenceUrls.filter((url): url is string => typeof url === "string" && url.length > 0).slice(0, MAX_REFERENCE_IMAGES)
+    : undefined;
+  const taskId = typeof item.taskId === "string" ? item.taskId : null;
+  const imageUrl = typeof item.imageUrl === "string" ? item.imageUrl : null;
+  const errorMessage = typeof item.errorMessage === "string" ? item.errorMessage : null;
+
+  let status: GenerationStatus = ALLOWED_STATUSES.includes(item.status as GenerationStatus)
+    ? (item.status as GenerationStatus)
+    : "failed";
+
+  if ((status === "creating" || status === "polling") && !taskId) {
+    status = "queued";
+  } else if (status === "creating" && taskId) {
+    status = "polling";
+  }
+
+  return {
+    clientId: item.clientId,
+    prompt: item.prompt,
+    model,
+    size,
+    quality,
+    referenceUrls,
+    createdAt,
+    status,
+    progress,
+    estimatedTime,
+    elapsedSeconds,
+    taskId,
+    imageUrl,
+    errorMessage,
+  };
+};
+
+const parseStoredTasks = (rawValue: string | null): GenerationTask[] => {
+  if (!rawValue) return [];
+  try {
+    const parsed = JSON.parse(rawValue) as StoredTasksPayload;
+    if (!parsed || parsed.version !== STORAGE_VERSION || !Array.isArray(parsed.tasks)) return [];
+    const now = Date.now();
+    const normalized: GenerationTask[] = [];
+    for (const candidate of parsed.tasks) {
+      const task = normalizeStoredTask(candidate);
+      if (!task) continue;
+      if (now - task.createdAt > MAX_TASK_AGE_MS) continue;
+      normalized.push(task);
+      if (normalized.length >= MAX_STORED_TASKS) break;
+    }
+    return normalized;
+  } catch (error) {
+    console.error("Failed to parse stored Nano Banana tasks:", error);
+    return [];
+  }
 };
 
 type ImageComparePanelProps = {
@@ -196,7 +282,7 @@ function ImageComparePanel({ outputUrl, referenceUrls }: ImageComparePanelProps)
 }
 
 export default function NanoBananaLabPage() {
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
   const scenarios: Scenario[] = t.ai.nanoBanana.scenarios ?? [];
   const [prompt, setPrompt] = useState("");
   const [model, setModel] = useState<Model>("z-image-turbo");
@@ -326,6 +412,27 @@ export default function NanoBananaLabPage() {
     [clearTaskTimers, t],
   );
 
+  const syncRunningTimers = useCallback(
+    (nextTasks: GenerationTask[]) => {
+      for (const task of nextTasks) {
+        if (task.status !== "polling" || !task.taskId) continue;
+        if (elapsedTimersRef.current.has(task.clientId)) continue;
+        const timer = setInterval(() => {
+          setTasks((prev) =>
+            prev.map((current) =>
+              current.clientId === task.clientId && current.status === "polling"
+                ? { ...current, elapsedSeconds: current.elapsedSeconds + 1 }
+                : current,
+            ),
+          );
+        }, 1000);
+        elapsedTimersRef.current.set(task.clientId, timer);
+        pollTask(task.clientId, task.taskId!);
+      }
+    },
+    [pollTask],
+  );
+
   const handleScenario = (scenarioPrompt: string) => {
     setPrompt(scenarioPrompt);
   };
@@ -349,7 +456,13 @@ export default function NanoBananaLabPage() {
         const form = new FormData();
         form.append("file", file);
         const res = await fetch("/api/uploads", { method: "POST", body: form });
-        const data = await res.json();
+        if (res.status === 401) {
+          toast.error(locale === "en" ? "Please sign in to use this feature." : "请先登录后使用该功能。");
+          const returnTo = encodeURIComponent(window.location.pathname + window.location.search);
+          window.location.href = `/${locale}/signin?returnTo=${returnTo}`;
+          return;
+        }
+        const data = await res.json().catch(() => ({} as any));
         if (!res.ok) {
           toast.error(data.error || t.ai.nanoBanana.toasts.error);
           continue;
@@ -511,6 +624,40 @@ export default function NanoBananaLabPage() {
   );
 
   useEffect(() => {
+    if (typeof window === "undefined") return;
+    const storedTasks = parseStoredTasks(window.localStorage.getItem(STORAGE_KEY));
+    if (!storedTasks.length) return;
+    setTasks((prev) => {
+      if (prev.length) {
+        syncRunningTimers(prev);
+        return prev;
+      }
+      syncRunningTimers(storedTasks);
+      return storedTasks;
+    });
+  }, [syncRunningTimers]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      if (!tasks.length) {
+        window.localStorage.removeItem(STORAGE_KEY);
+        return;
+      }
+      const now = Date.now();
+      const payload: StoredTasksPayload = {
+        version: STORAGE_VERSION,
+        tasks: tasks
+          .filter((task) => now - task.createdAt <= MAX_TASK_AGE_MS)
+          .slice(0, MAX_STORED_TASKS),
+      };
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+    } catch (error) {
+      console.error("Failed to persist Nano Banana tasks:", error);
+    }
+  }, [tasks]);
+
+  useEffect(() => {
     const startNext = async () => {
       const activeCount = tasks.filter((task) => task.status === "creating" || task.status === "polling").length;
       if (activeCount >= MAX_CONCURRENT_TASKS) return;
@@ -554,6 +701,13 @@ export default function NanoBananaLabPage() {
             referenceUrls: next.referenceUrls,
           }),
         });
+
+        if (response.status === 401) {
+          toast.error(locale === "en" ? "Please sign in to use this feature." : "请先登录后使用该功能。");
+          const returnTo = encodeURIComponent(window.location.pathname + window.location.search);
+          window.location.href = `/${locale}/signin?returnTo=${returnTo}`;
+          return;
+        }
 
         const data = await response.json().catch(() => null);
         if (!response.ok) {
@@ -614,6 +768,28 @@ export default function NanoBananaLabPage() {
       for (const clientId of pollTimeoutsRef.current.keys()) clearTaskTimers(clientId);
     };
   }, [clearTaskTimers]);
+
+  useEffect(() => {
+    const ready = tasks.filter((task) => task.status === "completed" && task.imageUrl && !task.savedToHistory);
+    if (!ready.length) return;
+
+    for (const task of ready) {
+      addAiGenerationHistoryItem({
+        id: task.clientId,
+        tool: "nano-banana",
+        imageUrl: task.imageUrl!,
+        prompt: task.prompt,
+        model: task.model,
+        createdAt: new Date(task.createdAt).toISOString(),
+      });
+    }
+
+    setTasks((prev) =>
+      prev.map((task) =>
+        task.status === "completed" && task.imageUrl && !task.savedToHistory ? { ...task, savedToHistory: true } : task,
+      ),
+    );
+  }, [tasks]);
 
   return (
     <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">

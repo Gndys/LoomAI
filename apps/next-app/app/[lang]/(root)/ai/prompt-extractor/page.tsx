@@ -18,7 +18,7 @@ type ExtractionStatus = "idle" | "analyzing" | "success" | "error";
 type Usage = { prompt_tokens?: number; completion_tokens?: number; total_tokens?: number } | null;
 
 export default function PromptExtractorPage() {
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -93,7 +93,13 @@ export default function PromptExtractorPage() {
         method: "POST",
         body: formData,
       });
-      const data = await response.json();
+      if (response.status === 401) {
+        toast.error(locale === "en" ? "Please sign in to use this feature." : "请先登录后使用该功能。");
+        const returnTo = encodeURIComponent(window.location.pathname + window.location.search);
+        window.location.href = `/${locale}/signin?returnTo=${returnTo}`;
+        return;
+      }
+      const data = await response.json().catch(() => ({} as any));
 
       if (!response.ok) {
         throw new Error(data.error || t.ai.promptExtractor.toasts.error);

@@ -95,6 +95,10 @@
 
 详细的设置说明和配置指南，请参考我们的[启动指南](./docs/user-guide/overview.md)。
 
+## 🔔 任务结束推送（PushPlus）
+
+配置 `.env` / `.env.loom` 里的 `PUSHPLUS_TOKEN` 后，用 `pnpm notify -- <command...>` 执行任何命令即可在命令结束时收到推送通知，例如：`pnpm notify -- pnpm db:push`。
+
 ## 📦 技术栈
 
 ### 前端
