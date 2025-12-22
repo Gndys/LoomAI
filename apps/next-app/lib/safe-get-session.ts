@@ -7,7 +7,7 @@ type GetSessionArgs = Parameters<typeof auth.api.getSession>[0];
  */
 export async function safeGetSession(args?: GetSessionArgs) {
   try {
-    return await auth.api.getSession(args);
+    return await auth.api.getSession(args ?? { headers: new Headers() });
   } catch (error) {
     console.error('safeGetSession: Failed to get session', error);
     return null;

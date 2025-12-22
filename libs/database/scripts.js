@@ -1,4 +1,4 @@
-const { execSync } = require('child_process');
+const { spawnSync } = require('child_process');
 const path = require('path');
 require('dotenv').config({ path: path.resolve(process.cwd(), '.env.local') });
 require('dotenv').config({ path: path.resolve(process.cwd(), '.env') });
@@ -8,17 +8,50 @@ require('dotenv').config({ path: path.resolve(process.cwd(), '.env') });
  */
 function runCommand(command, description) {
   console.log(`\n🚀 ${description}...\n`);
-  try {
-    execSync(command, { 
-      stdio: 'inherit',
-      env: { ...process.env }, // 确保环境变量传递
-      cwd: process.cwd() // 设置正确的工作目录
-    });
-    console.log(`\n✅ ${description}完成\n`);
-  } catch (error) {
+  const result = spawnSync(command, {
+    stdio: 'inherit',
+    env: { ...process.env },
+    cwd: process.cwd(),
+    shell: true,
+  });
+
+  if (result.status !== 0) {
     console.error(`\n❌ ${description}失败\n`);
-    process.exit(1);
+    process.exit(result.status ?? 1);
   }
+
+  console.log(`\n✅ ${description}完成\n`);
+}
+
+/**
+ * drizzle-kit 有时会把错误打印出来但仍返回 0；这里通过输出关键字兜底判定失败。
+ */
+function runDrizzleKit(command, description) {
+  console.log(`\n🚀 ${description}...\n`);
+  const result = spawnSync(command, {
+    stdio: 'pipe',
+    env: { ...process.env },
+    cwd: process.cwd(),
+    shell: true,
+    encoding: 'utf8',
+  });
+
+  if (result.stdout) process.stdout.write(result.stdout);
+  if (result.stderr) process.stderr.write(result.stderr);
+
+  const output = `${result.stdout ?? ''}\n${result.stderr ?? ''}`.toLowerCase();
+  const looksLikeError =
+    output.includes('error:') ||
+    output.includes('severity:') ||
+    output.includes(' code: ') ||
+    output.includes('❌');
+
+  if ((result.status ?? 0) !== 0 || looksLikeError) {
+    console.error(`\n❌ ${description}失败\n`);
+    process.exit(result.status ?? 1);
+  }
+
+  console.log(`\n✅ ${description}完成\n`);
 }
 
 // 获取命令行参数
@@ -31,15 +64,15 @@ switch (command) {
     break;
     
   case 'push':
-    runCommand('npx drizzle-kit push', '推送数据库架构到数据库');
+    runDrizzleKit('npx drizzle-kit push', '推送数据库架构到数据库');
     break;
     
   case 'generate':
-    runCommand('npx drizzle-kit generate', '生成数据库迁移文件');
+    runDrizzleKit('npx drizzle-kit generate', '生成数据库迁移文件');
     break;
     
   case 'migrate':
-    runCommand('npx drizzle-kit migrate', '应用数据库迁移');
+    runDrizzleKit('npx drizzle-kit migrate', '应用数据库迁移');
     break;
     
   case 'seed':
@@ -47,7 +80,7 @@ switch (command) {
     break;
     
   case 'studio':
-    runCommand('npx drizzle-kit studio', '启动 Drizzle Studio 数据库管理界面');
+    runDrizzleKit('npx drizzle-kit studio', '启动 Drizzle Studio 数据库管理界面');
     break;
     
   default:
