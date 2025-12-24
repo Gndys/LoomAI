@@ -19,6 +19,7 @@ import { Inbox } from "lucide-react"
 import { useTranslation } from "@/hooks/use-translation"
 import { config } from "@config"
 import Link from "next/link"
+import { normalizeAuthError } from "@/lib/normalize-auth-error"
 
 export function SignupForm({
   className,
@@ -81,14 +82,15 @@ export function SignupForm({
     );
 
     if (error) {
-      if (error.code) {
-        // Use internationalized error messages
-        const authErrorMessage = t.auth.authErrors[error.code as keyof typeof t.auth.authErrors] || t.auth.authErrors.UNKNOWN_ERROR;
-        setErrorMessage(authErrorMessage);
-        setErrorCode(error.code);
+      const normalized = normalizeAuthError(error);
+      if (normalized?.code && normalized.code in t.auth.authErrors) {
+        setErrorMessage(
+          t.auth.authErrors[normalized.code as keyof typeof t.auth.authErrors]
+        );
+        setErrorCode(normalized.code);
       } else {
-        setErrorMessage(t.common.unexpectedError);
-        setErrorCode('UNKNOWN_ERROR');
+        setErrorMessage(normalized?.message || t.common.unexpectedError);
+        setErrorCode(normalized?.code || "UNKNOWN_ERROR");
       }
       // 如果验证失败，重置 turnstile token 并强制重新渲染
       if (config.captcha.enabled) {

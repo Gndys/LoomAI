@@ -4,7 +4,6 @@ import { DataTable } from './data-table';
 import { Button } from '@/components/ui/button';
 import { UserPlus } from 'lucide-react'
 import { translations } from '@libs/i18n';
-import { config } from '@config';
 
 type SearchField = "email" | "name" | "id";
 type Role = "admin" | "user" | "all";
@@ -64,8 +63,8 @@ export default async function UserPage({ params, searchParams }: PageProps) {
 
   try {
     // 调用API获取用户数据
-    const baseUrl = config.app.baseUrl;
-    const apiUrl = `${baseUrl}/api/admin/users?${queryParams.toString()}`;
+    // Use a relative URL to avoid relying on external networking / DNS for self-calls.
+    const apiUrl = `/api/admin/users?${queryParams.toString()}`;
     console.log('Fetching users from:', apiUrl);
     
     const response = await fetch(apiUrl, {
@@ -74,7 +73,8 @@ export default async function UserPage({ params, searchParams }: PageProps) {
     });
 
     if (!response.ok) {
-      throw new Error('Failed to fetch users');
+      const body = await response.text().catch(() => '');
+      throw new Error(`Failed to fetch users (${response.status}): ${body || response.statusText}`);
     }
 
     const data = await response.json();

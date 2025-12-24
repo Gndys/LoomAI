@@ -43,6 +43,7 @@ export default function Header({ className }: HeaderProps) {
     { href: `/${currentLocale}/ai`, label: t.header.navigation.ai },
     { href: `/${currentLocale}/ai/fabric-design`, label: t.header.navigation.fabric },
     { href: `/${currentLocale}/ai/try-on`, label: t.header.navigation.tryOn },
+    { href: `/${currentLocale}/ai/body-model`, label: t.header.navigation.bodyModel },
     { href: `/${currentLocale}/ai/prompt-extractor`, label: t.header.navigation.promptExtractor },
     { href: `/${currentLocale}/ai/nano-banana`, label: t.header.navigation.nano },
     { href: `/${currentLocale}/cases`, label: t.header.navigation.cases },

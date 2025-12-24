@@ -243,6 +243,9 @@ importers:
       tailwind-merge:
         specifier: 3.0.2
         version: 3.0.2
+      three:
+        specifier: 0.182.0
+        version: 0.182.0
       tw-animate-css:
         specifier: 1.2.4
         version: 1.2.4
@@ -9859,6 +9862,9 @@ packages:
 
   three@0.135.0:
     resolution: {integrity: sha512-kuEpuuxRzLv0MDsXai9huCxOSQPZ4vje6y0gn80SRmQvgz6/+rI0NAvCRAw56zYaWKMGMfqKWsxF9Qa2Z9xymQ==}
+
+  three@0.182.0:
+    resolution: {integrity: sha512-GbHabT+Irv+ihI1/f5kIIsZ+Ef9Sl5A1Y7imvS5RQjWgtTPfPnZ43JmlYI7NtCRDK9zir20lQpfg8/9Yd02OvQ==}
 
   throttle-debounce@5.0.2:
     resolution: {integrity: sha512-B71/4oyj61iNH0KeCamLuE2rmKuTO5byTOSVwECM5FA7TiAiAW+UqTKZ9ERueC4qvgSttUhdmq1mXC3kJqGX7A==}
@@ -21822,6 +21828,8 @@ snapshots:
       any-promise: 1.3.0
 
   three@0.135.0: {}
+
+  three@0.182.0: {}
 
   throttle-debounce@5.0.2: {}
 
